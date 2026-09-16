@@ -1,8 +1,46 @@
 /// @function get_painted_grid(spr, frame_index)
-/// @description 返回贴图棋盘视觉网格 {ox,oy,cw,ch}（源 PNG 实测）；未校准返回 undefined（回退逻辑网格）
+/// @description 返回贴图棋盘视觉网格 {ox,oy,cw,ch}；两层查找：
+///   ① 本表（人工验证过的权威层，含手工调值条目）→ 命中即用
+///   ② 运行时自动标定缓存（scripts/map_grid_autocalib）→ 新地图零人工介入
+///   都未命中返回 undefined（回退逻辑网格）
 /// 仅用于 PVZ 十字线高亮带的视觉贴格对齐，不影响任何放置逻辑（放置仍走 global.grid_offset_*）
-/// 校准来源：pvz 校准脚本（源图边缘检测 + 原点/格距验收）；新增/修正地图后重新生成
+/// 注意：本函数会在 Draw 事件里被逐帧调用，故只查缓存、绝不做 surface 扫描；
+///       扫描由 obj_battle/Create_0 调 painted_grid_warm() 在战斗开始时完成。
 function get_painted_grid(spr, frame_index) {
+    var _t = painted_grid_table_get(spr, frame_index);
+    if (_t != undefined) return _t;
+    // 表未覆盖：尝试运行时自动标定结果（纯查缓存）
+    var _a = autocalib_peek(spr, frame_index);
+    if (_a != undefined) return _a;
+    // 两层都拿不到：登记一次，调试模式下由 obj_battle/Draw_0 红字提示
+    painted_grid_mark_missing(spr, frame_index);
+    return undefined;
+}
+
+/// @function painted_grid_warm(spr)
+/// @description 预热：只对「表中没有」的帧跑运行时自动标定（表已覆盖的帧零开销）
+///   在 Create/Step 等非绘制事件里调用（会创建 surface）
+/// @param {Asset.GMSprite} spr 地图精灵
+/// @param {Real} _max_frames 最多处理帧数（缺省 4，覆盖 map_spr_index 的 0..3 取值域）
+/// @returns {Real} 实际触发自动标定的帧数
+function painted_grid_warm(spr, _max_frames) {
+    if (!sprite_exists(spr)) return 0;
+    if (_max_frames == undefined) _max_frames = 4;
+    var _n = min(sprite_get_number(spr), _max_frames);
+    var _done = 0;
+    for (var _f = 0; _f < _n; _f++) {
+        if (painted_grid_table_get(spr, _f) != undefined) continue;
+        // 幂等：已缓存（含失败哨兵）会直接返回，不会重复扫描
+        autocalib_grid_from_sprite(spr, _f);
+        _done++;
+    }
+    return _done;
+}
+
+/// @function painted_grid_table_get(spr, frame_index)
+/// @description 查人工校准表；未收录返回 undefined
+/// @returns {Struct} {ox, oy, cw, ch} 或 undefined
+function painted_grid_table_get(spr, frame_index) {
     static _tbl = undefined;
     if (_tbl == undefined) {
         _tbl = ds_map_create();
@@ -81,17 +119,19 @@ function get_painted_grid(spr, frame_index) {
     if (is_array(_e)) {
         return { ox: _e[0], oy: _e[1], cw: _e[2], ch: _e[3] };
     }
-    // 未校准：登记一次，调试模式下由 obj_battle/Draw_0 红字提示。
-    // 新增地图忘记跑 gen_calibration.py 时，这里会静默回退逻辑网格（约偏 30~45px），肉眼很难发现——必须报出来。
+    return undefined;
+}
+
+/// @function painted_grid_mark_missing(spr, frame_index)
+/// @description 登记「表与自动标定都拿不到」的贴图（去重），供调试模式红字提示
+///   新增地图若自动标定也失败（如贴图非标准规格），这里会报出来，避免静默回退逻辑网格（偏 30~45px）
+function painted_grid_mark_missing(spr, frame_index) {
     if (!variable_global_exists("painted_grid_missing")) {
         global.painted_grid_missing = [];
     }
-    var _seen = false;
+    var _key = sprite_get_name(spr) + ":" + string(frame_index);
     for (var _i = 0; _i < array_length(global.painted_grid_missing); _i++) {
-        if (global.painted_grid_missing[_i] == _key) { _seen = true; break; }
+        if (global.painted_grid_missing[_i] == _key) return;
     }
-    if (!_seen) {
-        array_push(global.painted_grid_missing, _key);
-    }
-    return undefined;
+    array_push(global.painted_grid_missing, _key);
 }

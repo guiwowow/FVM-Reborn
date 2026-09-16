@@ -29,7 +29,7 @@ if (_show && !global.is_paused) {
     }
     var _col = clamp(floor((mouse_x - (global.grid_offset_x + _psx)) / global.grid_cell_size_x), 0, global.grid_cols - 1);
     var _row = clamp(floor((mouse_y - (global.grid_offset_y + _psy)) / global.grid_cell_size_y), 0, global.grid_rows - 1);
-    draw_set_alpha(0.2);
+    draw_set_alpha(0.35);
     draw_set_color(c_white);
     draw_rectangle(_ox, _oy + _row * _ch, _ox + global.grid_cols * _cw, _oy + (_row + 1) * _ch, false);
     draw_rectangle(_ox + _col * _cw, _oy, _ox + (_col + 1) * _cw, _oy + global.grid_rows * _ch, false);
@@ -44,7 +44,7 @@ draw_text(0,0,"FPS:"+string(fps))
 draw_text(0,25,"加速:"+(speed_up ? "开" : "关") + "（shift）")
 draw_text(0,50,"暂停（空格）\n菜单（ESC）")
 
-// 十字线校准缺失提示（仅调试模式）：新增地图忘了生成校准值 → 十字线静默回退逻辑网格（偏 30~45px）
+// 十字线校准缺失提示（仅调试模式）：表未收录且运行时自动标定也失败 → 十字线回退逻辑网格（偏 30~45px）
 if (global.debug && variable_global_exists("painted_grid_missing") && array_length(global.painted_grid_missing) > 0) {
     var _miss = "";
     for (var _i = 0; _i < array_length(global.painted_grid_missing); _i++) {

@@ -12,6 +12,7 @@ if global.lose_focus_pause{
 }
 
 battle_time ++
+
 // obj_controller STEP 事件
 if global.debug{
 	if keyboard_check_pressed(ord("M")){
@@ -210,5 +211,12 @@ if global.debug{
 			current_wave += 1
 			current_subwave = 0
 		}
+	}
+
+	// 自动标定自检（G 键，仅调试模式）：强制扫描当前地图贴图，与人工校准表逐条对比，
+	// 结果写 autocalib_check.txt + show_error_dialog 弹窗（真机取回文本的唯一通道）。
+	// 注意：global.debug 仅在 obj_game_init/Create_0 置 0，release 包上本块不会执行。
+	if keyboard_check_pressed(ord("G")){
+		autocalib_selftest_report([global.level_data.level_sprite], 4);
 	}
 }

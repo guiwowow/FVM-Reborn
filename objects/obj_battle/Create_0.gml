@@ -29,6 +29,10 @@ global.grid_offset_y = 228
 global.grid_cols = global.level_file.map_cols
 global.grid_rows = global.level_file.map_rows
 
+// 十字辅助线视觉网格：表已收录的帧零开销；新地图（含运行时加载的下载地图）
+// 在这里自动标定一次，之后 Draw 里只查缓存 → 新地图不再需要离线跑校准脚本
+painted_grid_warm(global.level_data.level_sprite, 4)
+
 
 //啃食音效
 chomp_sound_list = ds_list_create()

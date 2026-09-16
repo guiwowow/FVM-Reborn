@@ -1346,6 +1346,7 @@
     {"id":{"name":"levels_init","path":"scripts/levels_init/levels_init.yy",},},
     {"id":{"name":"load_custom_deck","path":"scripts/load_custom_deck/load_custom_deck.yy",},},
     {"id":{"name":"load_file","path":"scripts/load_file/load_file.yy",},},
+    {"id":{"name":"map_grid_autocalib","path":"scripts/map_grid_autocalib/map_grid_autocalib.yy",},},
     {"id":{"name":"map_grid_calibration","path":"scripts/map_grid_calibration/map_grid_calibration.yy",},},
     {"id":{"name":"map_object_init","path":"scripts/map_object_init/map_object_init.yy",},},
     {"id":{"name":"map_registry","path":"scripts/map_registry/map_registry.yy",},},
