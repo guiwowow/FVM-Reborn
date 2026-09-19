@@ -68,6 +68,15 @@ function draw_settings_page(){
 	    btn5.state = global.borderless_window;
 		btn5.tooltip_text = "将全屏变为无边框窗口模式\n该选项只会在你下一次切换全屏时生效"
 	    array_push(setting_buttons, btn5);
+		
+		// 创建缓时视觉叠加开关（冷色调 + 暗角）
+		// 注：本页 5 个开关的标签是预烘焙在 spr_option_menu_text 里的，第 6 个没有对应图，
+		//     标签由 obj_config_menu/Draw_0.gml 的 case 2 用 font_yuan 补画 —— 改位置要同步改
+	    var btn6 = instance_create_depth(x - 200, y + 330, depth-1, obj_setting_toggle);
+	    btn6.config_key = "slowmo_overlay";
+	    btn6.state = global.slowmo_overlay;
+		btn6.tooltip_text = "选中卡片/铲子触发缓时时，画面叠加冷色调与暗角\n关闭后缓时不再有任何画面提示"
+	    array_push(setting_buttons, btn6);
     
 	    // 标记当前设置页面
 	    current_settings = id;

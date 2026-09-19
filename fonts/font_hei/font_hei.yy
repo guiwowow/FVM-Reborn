@@ -12,6 +12,7 @@
   "fontName":"HarmonyOS Sans SC",
   "glyphOperations":0,
   "glyphs":{
+    "37687":{"character":37687,"h":30,"offset":0,"shift":24,"w":22,"x":2,"y":1360,},
     "32":{"character":32,"h":30,"offset":0,"shift":6,"w":6,"x":2,"y":2,},
     "33":{"character":33,"h":30,"offset":1,"shift":5,"w":3,"x":1744,"y":834,},
     "34":{"character":34,"h":30,"offset":1,"shift":9,"w":7,"x":1749,"y":834,},
@@ -3447,6 +3448,7 @@
   },
   "pointRounding":0,
   "ranges":[
+    {"lower":37687,"upper":37687,},
     {"lower":32,"upper":127,},
     {"lower":161,"upper":161,},
     {"lower":165,"upper":165,},

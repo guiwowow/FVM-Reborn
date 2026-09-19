@@ -33,6 +33,11 @@ global.grid_rows = global.level_file.map_rows
 // 在这里自动标定一次，之后 Draw 里只查缓存 → 新地图不再需要离线跑校准脚本
 painted_grid_warm(global.level_data.level_sprite, 4)
 
+// 缓时视觉叠加层（整体冷色调 + 外围暗角）：随战斗房间创建、随房间销毁
+// ⚠️ 必须在 obj_battle（而非 obj_game_init）里创建 —— obj_game_init 太早，GPU/纹理页未就绪
+//    （2026-09-16 autocalib 真机 7/7 SCAN-FAILED 就是栽在这个时机上）
+instance_create_depth(0, 0, -1100, obj_slowmo_overlay);
+
 
 //啃食音效
 chomp_sound_list = ds_list_create()
@@ -41,6 +46,11 @@ boss_count = 0
 map_spr_index = 0
 
 speed_up = false
+// 2 倍速全局（见 scripts/speed_up_control）：每场战斗从 1x 开始
+// app_surf_w/h 归零 → speed_up_surface_fit() 会重新记下本房间的 application_surface 原始分辨率
+global.app_surf_w = 0
+global.app_surf_h = 0
+speed_up_set(false)   // 回 1x：顺带删掉 runtime 的 2x 标志文件、恢复 application_surface 分辨率
 time_limit = -1
 timer_pause = false
 

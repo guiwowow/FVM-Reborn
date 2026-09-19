@@ -29,3 +29,12 @@ if card_equipped_attire_id("player")!= -1{
 }
 
 awake_buff_timer = 0
+
+// ---- 缓时动画补偿 opt-in（2026-09-19）----
+// 声明「本对象的 timer 只用于算 image_index，不参与寿命/伤害/状态转移」，
+// 于是缓时期间 slowmo_gate() 可以在非逻辑帧单独推进它，让动画比 1/12 的玩法更流畅。
+// 本对象的 timer 只出现在 Step_0.gml 的 line 9/10/24（`if timer < flash_speed-1 { timer++ } … timer = 0`）
+// —— 纯精灵步进，已逐行核实无玩法用途。
+// ⚠️ 注意：本对象 Create 里**没有** event_inherited，不会从 obj_card_parent 继承这个标志，
+//    所以必须在这里显式写一遍。
+slowmo_anim_timer = true

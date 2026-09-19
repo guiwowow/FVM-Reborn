@@ -32,6 +32,14 @@ global.file_dialog_pending = ""
 
 // 锁帧 60（安卓高刷屏下 game_set_speed 可能失效，配合 obj_touch_control 的 sleep 补偿）
 game_set_speed(60, gamespeed_fps)
+// 上次若在 2x 状态下被杀进程，会留下 runtime 的 2x 标志文件 → 启动时清掉，
+// 否则菜单房间也会被 runtime 跑成双倍步进（见 scripts/speed_up_control）
+if (file_exists("fvm_speed2x.txt")) {
+    file_delete("fvm_speed2x.txt");
+}
+if (file_exists("fvm_2xsub.txt")) {
+    file_delete("fvm_2xsub.txt");
+}
 
 // 触屏适配控制器（持久，跨房间常驻；双指取消/虚拟按键）
 if (!instance_exists(obj_touch_control)) {
@@ -88,6 +96,7 @@ if (!file_exists("config.ini")) {
 	ini_write_real("settings", "save_slot", 0)
 	ini_write_bool("settings", "lose_focus_pause", true)
 	ini_write_bool("settings", "cardslow_enabled", true)
+	ini_write_bool("settings", "slowmo_overlay", true)
 	ini_open("config.ini");
     for (var i = 0; i < array_length(global.keybind_config); i++) {
         var kb = global.keybind_config[i];
@@ -116,6 +125,7 @@ global.borderless_window = ini_read_bool("settings", "borderless_window", true);
 global.save_slot = ini_read_real("settings", "save_slot", 0)
 global.lose_focus_pause = ini_read_bool("settings", "lose_focus_pause", true);
 global.cardslow_enabled = ini_read_bool("settings", "cardslow_enabled", true);
+global.slowmo_overlay = ini_read_bool("settings", "slowmo_overlay", true);
 for (var i = 0; i < array_length(global.keybind_config); i++) {
 	    var kb = global.keybind_config[i];
 	    var key_val = ini_read_real("keybinds", kb.name, kb.default1);

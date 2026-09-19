@@ -1,3 +1,5 @@
+// 缓时门控（2026-09-19 补 §21 遗留缺口：本对象原先漏了门控，缓时下仍全速）
+if (slowmo_gate()) exit;
 // obj_plant_parent 的 Step 事件
 if global.is_paused{
 	exit

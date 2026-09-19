@@ -1,0 +1,13 @@
+{
+  "$GMScript":"v1",
+  "%Name":"speed_up_control",
+  "isCompatibility":false,
+  "isDnD":false,
+  "name":"speed_up_control",
+  "parent":{
+    "name":"assistant",
+    "path":"folders/脚本/assistant.yy",
+  },
+  "resourceType":"GMScript",
+  "resourceVersion":"2.0",
+}

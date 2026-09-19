@@ -1,3 +1,6 @@
+// 2 倍速：维持 application_surface 分辨率（切房间/切倍速后自动纠正；尺寸没变时零开销）
+speed_up_surface_fit();
+
 // 选卡缓时：逻辑与动画均 12 倍慢（保存/恢复各对象原本 image_speed，不干扰手动动画）
 if (slowmo_gate()) exit;
 if global.is_paused{
@@ -115,12 +118,7 @@ if time_limit > 0{
 
 if keyboard_check_pressed(vk_shift) || keyboard_check_pressed(vk_lshift){
 	speed_up = not speed_up
-	if speed_up{
-		game_set_speed(120,gamespeed_fps)
-	}
-	else{
-		game_set_speed(60,gamespeed_fps)
-	}
+	speed_up_set(speed_up)   // 唯一入口：同时处理 game_set_speed 与分辨率
 }
 
 if battle_time >= (global.level_file.first_wave_delay * 60) && level_stage == "ready" {

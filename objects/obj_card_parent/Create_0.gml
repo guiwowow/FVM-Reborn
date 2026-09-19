@@ -54,3 +54,9 @@ awake_anim = 0
 plant_id = ""  // 植物唯一标识符
 current_level = 0  // 当前等级
 
+
+// ---- 缓时动画补偿 opt-in（2026-09-19）----
+// 声明「本对象的 timer 只用于算 image_index，不参与寿命/伤害/状态转移」，
+// 于是缓时期间 slowmo_gate() 可以在非逻辑帧单独推进它，让动画比 1/12 的玩法更流畅。
+// ⚠️ 新增这个标志前必须先逐行确认 timer 没有兼任玩法用途（见 scripts/slowmo_gate/slowmo_gate.gml 文件头）。
+slowmo_anim_timer = true
