@@ -1,6 +1,13 @@
 // 2 倍速：维持 application_surface 分辨率（切房间/切倍速后自动纠正；尺寸没变时零开销）
 speed_up_surface_fit();
 
+// 2 倍速：每帧把实例变量对齐到全局真值。
+// 为什么需要：speed_up_probe_tick 会在**面板被锁回 60Hz 时异步撤回** 2x（只改
+// global.speed_up_active），而按钮/HUD 读的是 _battle.speed_up（Draw_0.gml:44）。
+// 不同步的话会出现「HUD 显示加速:开，实际只有 60 帧」。放在 slowmo_gate() 之前，
+// 保证被缓时门控 exit 的帧也会纠正。
+speed_up = global.speed_up_active;
+
 // 选卡缓时：逻辑与动画均 12 倍慢（保存/恢复各对象原本 image_speed，不干扰手动动画）
 if (slowmo_gate()) exit;
 if global.is_paused{

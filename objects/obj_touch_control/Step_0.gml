@@ -16,6 +16,10 @@ if (os_type != os_windows) {
     _last_frame_time = current_time;
 }
 
+// 2 倍速支持性实测：推进探测窗口（必须在压帧之后，fps 才反映真实节拍）
+// 见 scripts/speed_up_control/speed_up_control.gml 的 speed_up_probe_tick()
+speed_up_probe_tick();
+
 // 帧耗时监控（调试用，发布前移除）
 if (false) {
     var _now = current_time;
