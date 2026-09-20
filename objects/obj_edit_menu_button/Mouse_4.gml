@@ -47,22 +47,62 @@ else if btn_type == "import_save_backup" {
 		if (_txt == "") {
 			show_notice("剪贴板为空，请先复制要导入的存档内容", 150)
 		} else {
-			var _ok = false;
-			try {
-				var _data = json_parse(_txt);
-				if (is_struct(_data) && !is_undefined(_data[$ "version"])) {
-					global.save_data = _data;
-					save_file(global.save_slot);
-					load_file(global.save_slot);
-					_ok = true;
-				}
-			} catch(e) {
-				_ok = false;
-			}
-			if (_ok) {
-				show_notice("存档导入成功", 120)
+			// ---- 防御兜底 ----------------------------------------------------------
+			// 背景：有玩家在平板上点「导入存档」崩溃，一直未能复现。
+			// 原实现只校验 is_struct + version，而游戏实际依赖 14 个顶层字段
+			// （player 被引用 127 处、unlocked_items 107 处、unlocked_cards 89 处…）。
+			// 只带 version 的残缺存档能通过原校验 → 写盘成功 → 之后别处读 .player.level 时炸。
+			// 现在缺字段就明确拒绝，并把缺失项摊给用户（可截图反馈），不让它到别处炸。
+			// 另：从备忘录/微信粘贴常带 BOM，json_parse 会直接失败 → 先剥掉。
+			// ---------------------------------------------------------------------
+			_txt = string_replace_all(_txt, chr(65279), "");   // 去 BOM (U+FEFF)
+			if (string_length(_txt) > 2000000) {               // ~2MB，正常存档远小于此
+				show_error_dialog("存档导入失败", "剪贴板内容异常（过长：" + string(string_length(_txt)) + " 字符）。\n请确认复制的是游戏 [导出存档] 产生的完整内容。")
 			} else {
-				show_notice("剪贴板内容不是有效的存档", 150)
+				var _ok = false;
+				var _err = "";
+				try {
+					var _data = json_parse(_txt);
+					if (!is_struct(_data)) {
+						_err = "剪贴板内容不是存档格式（顶层不是对象）。";
+					} else if (is_undefined(_data[$ "version"])) {
+						_err = "缺少 version 字段，不像是游戏存档。";
+					} else {
+						// 必需字段（所有存档版本都有）—— 按容器类型校验，缺一个都可能后续崩溃
+						var _need_struct = ["player", "unlocked_items", "equipped_items"];
+						var _need_array  = ["unlocked_cards", "completed_levels", "inventory", "unlocked_weapons", "unlocked_gems", "saved_decks", "tasks", "completed_tasks"];
+						var _miss = "";
+						for (var _i = 0; _i < array_length(_need_struct); _i++) {
+							var _f = _need_struct[_i];
+							if (!is_struct(_data[$ _f])) _miss += _f + " ";
+						}
+						for (var _j = 0; _j < array_length(_need_array); _j++) {
+							var _f = _need_array[_j];
+							if (!is_array(_data[$ _f])) _miss += _f + " ";
+						}
+						if (_miss != "") {
+							_err = "存档缺少必需字段：" + _miss + "\n请使用游戏 [导出存档] 生成的完整内容。";
+						} else {
+							// 老版本存档本来就没有这几个字段（load_file 的版本迁移会补），
+							// 这里按同一口径先补默认值，避免迁移链读到 undefined。
+							var _pl = _data[$ "player"];
+							if (is_undefined(_data[$ "attires"]))              _data[$ "attires"] = [];
+							if (is_undefined(_data[$ "equipped_cookbook"]))    _data[$ "equipped_cookbook"] = [[], [], []];
+							if (is_undefined(_pl[$ "crown_version"]))          _pl[$ "crown_version"] = "0.0.0";
+							global.save_data = _data;
+							save_file(global.save_slot);
+							load_file(global.save_slot);
+							_ok = true;
+						}
+					}
+				} catch(e) {
+					_err = "解析失败：" + string(e);
+				}
+				if (_ok) {
+					show_notice("存档导入成功", 120)
+				} else {
+					show_error_dialog("存档导入失败", _err + "\n\n复制到的内容开头：" + string_copy(_txt, 1, 60) + "…")
+				}
 			}
 		}
 	}
