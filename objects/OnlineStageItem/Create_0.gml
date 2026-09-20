@@ -180,10 +180,14 @@ function on_draw() {
         gpu_set_scissor(_prev_scissor)
     }
 
-    scribble(self.state.item.title)
+    // 标题字色：与 StageItem 同理（同一张卡面 spr_stage_item，标题带是浅蓝 #9DB9DE）
+    var _title_draw = scribble(self.state.item.title)
         .align(fa_left, fa_center)
         .starting_format(os_type == os_android ? "font_hei" : "font_hei_outline_4dir_black")
-        .draw(self.state.left + 30, self.state.top + 36)
+    if (os_type == os_android) {
+        _title_draw = _title_draw.blend(make_color_rgb(23, 77, 134), 1)
+    }
+    _title_draw.draw(self.state.left + 30, self.state.top + 36)
     scribble(self.state.item.author)
         .align(fa_left, fa_center)
         .draw(self.state.left + 154, self.state.top + 78)

@@ -34,6 +34,7 @@ global.file_dialog_pending = ""
 game_set_speed(60, gamespeed_fps)
 // 上次若在 2x 状态下被杀进程，会留下 runtime 的 2x 标志文件 → 启动时清掉，
 // 否则菜单房间也会被 runtime 跑成双倍步进（见 scripts/speed_up_control）
+speed_up_init()   // 启动时探测面板刷新率（60Hz 设备开 2x 会被拒绝并提示）
 if (file_exists("fvm_speed2x.txt")) {
     file_delete("fvm_speed2x.txt");
 }

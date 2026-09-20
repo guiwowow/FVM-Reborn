@@ -139,11 +139,16 @@ function on_draw() {
         self.state.start_button.on_draw()
     }
     if (!is_undefined(self.state.custom_stage)) {
-        scribble(self.state.custom_stage.name, "stage_detail_name")
+        // 标题字色：面板 spr_stage_detail (scale 1.9) 标题带实测是**浅天蓝 #7FC8F5**，
+        // 安卓没有描边字体 → 白字看清度差。改用深藏蓝 #174D86。
+        var _name_draw = scribble(self.state.custom_stage.name, "stage_detail_name")
             .align(fa_center, fa_center)
             .scale(1.2)
             .starting_format(os_type == os_android ? "font_hei" : "font_hei_outline_4dir_black")
-            .draw(self.state.left + (self.state.width / 2),  self.state.top + 114)
+        if (os_type == os_android) {
+            _name_draw = _name_draw.blend(make_color_rgb(23, 77, 134), 1)
+        }
+        _name_draw.draw(self.state.left + (self.state.width / 2),  self.state.top + 114)
 
         scribble(self.state.custom_stage.id)
             .draw(self.state.left + 160, self.state.top + 170)

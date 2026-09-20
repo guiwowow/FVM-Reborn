@@ -9,6 +9,9 @@ self.state = {
     focused: false,
     cursor_visible: true,
     cursor_timer: 0,
+    /// @type {Real}
+    /// get_string_async 的请求 id（安卓软键盘用；-1 = 没有进行中的对话框）
+    dialog_id: -1,
     /// @type {function}
     on_change: undefined,
     /// @type {function ():Bool}
@@ -62,6 +65,18 @@ function focus() {
     }
     self.state.focused = true
     keyboard_string = self.state.text
+    // 软键盘（2026-09-20）：安卓没有硬件键盘，`keyboard_string` 拿不到任何输入
+    // → 之前的表现是「能点进去、光标在闪，但打不出字」。
+    // 改用与玩家改名模块（objects/obj_text_input）完全相同的方案：
+    // get_string_async 弹**系统输入对话框**（自带软键盘），结果在 Async - Dialog 事件写回。
+    // 只在"用户真的点了输入框"这一条路径上触发（focus() 由 on_step 的点击检测调用）。
+    if (os_type != os_windows && self.state.dialog_id == -1) {
+        var _prompt = self.state.placeholder
+        if (_prompt == "") {
+            _prompt = "请输入";
+        }
+        self.state.dialog_id = get_string_async(_prompt, self.state.text);
+    }
     // 安卓分支：不并入任何 IME 屏蔽/放开调用（与既有策略一致）。
     // 上游在此调用 native_enable_ime / native_disable_ime，二者由 WindowsNative 扩展提供，
     // 而该扩展不在本工程 .yyp 内（安卓侧由 scripts/NativeUtil/NativeUtil.gml 的纯 GML 兼容层替代），
@@ -117,7 +132,10 @@ function on_step() {
     }
 
     var _prev = self.state.text
-    if (keyboard_check(vk_control) && keyboard_check_pressed(ord("V"))) {
+    if (os_type != os_windows) {
+        // 安卓：文本由 Async - Dialog 事件写回，这里**绝不碰 text**。
+        // 关键原因：安卓上 keyboard_string 恒为空串，照搬下面那行会把刚输入的内容每帧刷掉。
+    } else if (keyboard_check(vk_control) && keyboard_check_pressed(ord("V"))) {
         self.state.text += clipboard_get_text()
         keyboard_string = self.state.text
     } else {
@@ -137,6 +155,35 @@ function on_step() {
     if (self.state.cursor_timer >= 30) {
         self.state.cursor_timer = 0
         self.state.cursor_visible = !self.state.cursor_visible
+    }
+}
+
+/// @description Async - Dialog 回调（安卓软键盘）。.yy 序列化：eventType=7, eventNum=63。
+/// 回调键（2026 手册权威）：id=请求 id，status=true=点确定，result=用户输入（空串=无输入）。
+/// ⚠️ 旧版独立的 "text" 键已移除，结果就在 result；result 不是按钮名，不能当 "OK"/"Cancel" 判。
+/// 写法与 objects/obj_text_input/Other_63.gml 一致（同一个已验证的通道）。
+function on_async_dialog() {
+    if (self.state.dialog_id == -1) {
+        return;
+    }
+    var _fired_id   = (is_struct(async_load) ? async_load[$ "id"]     : async_load[? "id"]);
+    var _fired_stat = (is_struct(async_load) ? async_load[$ "status"] : async_load[? "status"]);
+    var _fired_res  = (is_struct(async_load) ? async_load[$ "result"] : async_load[? "result"]);
+
+    // 老运行时可能不给 id → 只认"有对话框在等"；给了 id 就必须对上，避免串台
+    if (!is_undefined(_fired_id) && _fired_id != self.state.dialog_id) {
+        return;
+    }
+
+    var _is_ok = is_undefined(_fired_stat) || (_fired_stat != 0 && _fired_stat != false);
+    var _prev = self.state.text;
+    if (_is_ok && is_string(_fired_res) && string_length(_fired_res) > 0) {
+        self.state.text = string_copy(_fired_res, 1, 64);
+    }
+    self.state.dialog_id = -1;
+    self.state.focused = false;   // 对话框收工 → 失焦，光标停闪
+    if (self.state.text != _prev) {
+        emit_change();
     }
 }
 

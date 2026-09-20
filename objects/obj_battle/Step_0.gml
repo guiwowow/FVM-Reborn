@@ -118,7 +118,7 @@ if time_limit > 0{
 
 if keyboard_check_pressed(vk_shift) || keyboard_check_pressed(vk_lshift){
 	speed_up = not speed_up
-	speed_up_set(speed_up)   // 唯一入口：同时处理 game_set_speed 与分辨率
+	speed_up = speed_up_set(speed_up)   // 返回**实际生效值**：60Hz 面板上开 2x 会被拒绝并弹提示
 }
 
 if battle_time >= (global.level_file.first_wave_delay * 60) && level_stage == "ready" {

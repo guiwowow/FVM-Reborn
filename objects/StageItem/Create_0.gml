@@ -153,10 +153,18 @@ function on_draw() {
         )
         gpu_set_scissor(_prev_scissor)
 
-        scribble(self.state.custom_stage.name)
+        // 标题字色（2026-09-20）：卡面 spr_stage_item 的标题带实测是**浅蓝 #9DB9DE**，
+        // 而安卓没有 font_hei_outline_4dir_black（obj_menu_manager 在安卓提前 return，
+        // 烘焙描边字体的 scribble_font_bake_outline_4dir 执行不到）→ 纯白字对比度只有 2.02:1，看不清。
+        // 改用深藏蓝 #174D86（与配置菜单标签的描边色同一个，对比度 4.24:1）。
+        // 非安卓沿用自带描边的字体，颜色不动。
+        var _title_draw = scribble(self.state.custom_stage.name)
             .align(fa_left, fa_center)
             .starting_format(os_type == os_android ? "font_hei" : "font_hei_outline_4dir_black")
-            .draw(self.state.left + 30, self.state.top + 36)
+        if (os_type == os_android) {
+            _title_draw = _title_draw.blend(make_color_rgb(23, 77, 134), 1)
+        }
+        _title_draw.draw(self.state.left + 30, self.state.top + 36)
         scribble(self.state.custom_stage.author)
             .align(fa_left, fa_center)
             .draw(self.state.left + 154, self.state.top + 78)

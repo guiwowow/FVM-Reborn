@@ -49,7 +49,7 @@ if (os_type != os_windows) {
             var _battle = instance_find(obj_battle, 0);
             if (instance_exists(_battle)) {
                 _battle.speed_up = !_battle.speed_up;
-                speed_up_set(_battle.speed_up);   // 唯一入口（含 60Hz 的半分辨率处理）
+                _battle.speed_up = speed_up_set(_battle.speed_up);   // 返回实际生效值（60Hz 上会被拒绝 + 弹提示）
             }
         }
     }

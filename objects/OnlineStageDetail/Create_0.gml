@@ -121,11 +121,15 @@ function on_draw() {
     }
 
     var _item = self.state.item
-    scribble(_item.title, "online_stage_detail_name")
+    // 标题字色：与 StageDetail 同理（面板标题带是浅天蓝 #7FC8F5）
+    var _name_draw = scribble(_item.title, "online_stage_detail_name")
         .align(fa_center, fa_center)
         .scale(1.2)
         .starting_format(os_type == os_android ? "font_hei" : "font_hei_outline_4dir_black")
-        .draw(self.state.left + (self.state.width / 2), self.state.top + 114)
+    if (os_type == os_android) {
+        _name_draw = _name_draw.blend(make_color_rgb(23, 77, 134), 1)
+    }
+    _name_draw.draw(self.state.left + (self.state.width / 2), self.state.top + 114)
 
     scribble(_item.id)
         .draw(self.state.left + 160, self.state.top + 170)

@@ -19,16 +19,69 @@
 // 注：obj_touch_control/Step_0 开头的忙等压帧块按 `1000 / game_get_speed(fps)` 计时，
 //     它作用在**每个逻辑步**上，所以一帧跑 2 步时天然就是 120 步/秒的节拍器，无需再动。
 
+/// @description 读取本机面板刷新率（**面板能力上限**），结果缓存到 global
+///
+/// 语义说明：`display_get_frequency()` 在安卓上既可能返回 0，也可能返回面板**最高**而非**当前**
+/// 刷新率。对"这台设备能不能跑 2 倍速"这个问题，**"面板最高"正是我们要的答案**
+/// （60Hz 面板的机器拿不到 120fps 是平台约束，见 §25.1）。
+///
+/// @return {Real} 面板刷新率；0 = 读不到
+function speed_up_panel_hz() {
+    if (!variable_global_exists("speed_up_panel_hz") || global.speed_up_panel_hz <= 0) {
+        var _f = 0;
+        try {
+            _f = display_get_frequency();
+        } catch (e) {
+            _f = 0;
+        }
+        if (!is_real(_f) || _f <= 0) {
+            _f = 0;
+        }
+        global.speed_up_panel_hz = _f;
+    }
+    return global.speed_up_panel_hz;
+}
+
+/// @description 本机是否**有能力**跑 2 倍速（面板 >= 110Hz）
+///
+/// 读不到刷新率（0）时**不拦截** —— 保持与旧版一致的行为，避免误伤真正的高刷设备。
+/// 注意：这里判的是"面板能力"，不判"此刻是否正好在 120Hz"：引擎在请求 120 时会自己把面板拉上去
+/// （能拉到 120 的机器会拉到，拉不到的机器本来就跑不了 2x）。
+///
+/// @return {Bool}
+function speed_up_supported() {
+    var _hz = speed_up_panel_hz();
+    if (_hz <= 0) {
+        return true;
+    }
+    return _hz >= 110;
+}
+
 /// @description 切换 1x / 2x 倍速（触屏按钮与 shift 键都必须走这里，别再各自调 game_set_speed）
+///
+/// 60Hz 面板上**拒绝开启**并弹提示：平台不会给 60Hz 面板上的应用开放 120fps
+/// （§25.1：三条路已全部实测证伪，属系统约束而非引擎 bug）。
+/// 与其静默无效让玩家以为按钮坏了，不如明确说明。
+///
 /// @param {Bool} _on
+/// @return {Bool} **实际生效**的倍速状态（60Hz 上请求 2x 会返回 false，调用方需据此同步按钮/HUD）
 function speed_up_set(_on) {
     if (!variable_global_exists("speed_up_active")) {
         global.speed_up_active = false;
+    }
+    if (_on && !speed_up_supported()) {
+        global.speed_up_active = false;
+        game_set_speed(60, gamespeed_fps);
+        show_notice("2倍速仅支持120hz刷新率设备", 180);
+        speed_up_write_flag();
+        speed_up_surface_fit();
+        return false;
     }
     global.speed_up_active = _on;
     game_set_speed(_on ? 120 : 60, gamespeed_fps);
     speed_up_write_flag();
     speed_up_surface_fit();
+    return _on;
 }
 
 /// @description 把「是否开了 2x」告诉 runtime 的 Java 层
@@ -75,5 +128,14 @@ function speed_up_surface_fit() {
     var _h = _need_half ? max(2, global.app_surf_h div 2) : global.app_surf_h;
     if (surface_get_width(application_surface) != _w or surface_get_height(application_surface) != _h) {
         surface_resize(application_surface, _w, _h);
+    }
+}
+
+/// @description 启动时探测一次面板刷新率并写进 global（obj_game_init/Create_0 调用）
+/// 提前探测的好处：进入战斗时判定已经就绪，玩家点按钮不会因为首次调用而多一帧延迟。
+function speed_up_init() {
+    speed_up_panel_hz();
+    if (!variable_global_exists("speed_up_active")) {
+        global.speed_up_active = false;
     }
 }
