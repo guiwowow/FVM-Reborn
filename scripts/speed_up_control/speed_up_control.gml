@@ -17,22 +17,26 @@
 // ⚠️ 判定结果**不缓存**（第二版曾缓存，出过 bug：设备先跑 120 再被锁 60Hz 时，
 //    旧的“支持”结论仍生效 → 按钮能开、无效果、也不提示）。
 //    现在改为**持续监控**：只要 2x 开着，就不断开新窗口复检，
-//    面板中途被改回 60Hz 也会在约 1 秒内被自动撤回并提示。
+//    面板中途被改回 60Hz 也会在 0.8s 内被自动撤回并提示。
 //
 // 判定用 delta_time（上一帧真实微秒数）自算**瞬时**帧率，不用 fps——
 // 后者是约 1 秒窗口的**平滑值**，探测刚开始读到的还是切换前的旧值（§25.7 记录的“振荡”根源）。
 
-#macro SPEED_UP_PROBE_WARMUP_US     600000    // 每个窗口开头忽略这么久（面板切频/负载波动期间不代表稳态）
-#macro SPEED_UP_PROBE_SAMPLE_US     800000    // 窗口采样时长（微秒）
-#macro SPEED_UP_MIN_OK_FPS          70        // 窗口内**最快一帧**低于此值 = 面板确实上不去 120
-#macro SPEED_UP_PROBE_INTERVAL_US   800000    // 窗口结束后到下个窗口开始的间隔
+#macro SPEED_UP_PROBE_WARMUP_US     400000    // 每个窗口开头忽略这么久（等面板切频；这期间慢帧不算反证）
+#macro SPEED_UP_PROBE_SAMPLE_US     400000    // 空转期后继续观察这么久，仍未见快帧才撤回
+#macro SPEED_UP_MIN_OK_FPS          70        // 达标帧率：>= 此值即证明面板能上 120
+
+// 判定窗口总长 = WARMUP + SAMPLE = 0.8s。这是**撤回路径**的延时上限；
+// 通过路径有「提前通过」（见 tick），只要有**一帧**达标就立刻结束，通常远早于此。
+// 为什么不能更短：切频期间帧时仍是 16.6ms，必须留够时间让能上 120 的面板真的切过去，
+// 否则会把好设备误判成不支持。真机日志显示切频在几帧内完成，0.4s 已很宽裕；
+// 若日后想再压，先确认「从开 2x 到第一帧达标」的实测耗时。
 
 /// @description 开一个探测/监控窗口（speed_up_set 打开 2x 时调用）
 /// 状态机 global.speed_up_probe_state：0=空闲 1=空转期 2=采样期
 function speed_up_probe_begin() {
     global.speed_up_probe_state = 1;              // 空转期
     global.speed_up_probe_left = SPEED_UP_PROBE_WARMUP_US;
-    global.speed_up_probe_max_fps = 0;
 }
 
 /// @description 每帧调用（obj_touch_control/Step_0.gml 的压帧块之后）—— 推进探测/监控窗口
@@ -40,7 +44,15 @@ function speed_up_probe_begin() {
 /// 必须在压帧之后调用：压帧是按 game_get_speed(fps) 计的，先压帧才能让本帧的
 /// delta_time 反映真实节拍。
 ///
-/// 窗口结束 → 判定 → 若通过则**立刻开下一个窗口**（开着 2x 就一直复检）。
+/// **非对称判定（关键）**：
+///   · 看到快帧（>= SPEED_UP_MIN_OK_FPS）→ **立刻通过**，重启窗口继续监控。
+///     快帧是无歧义证据，不必等窗口走完 —— 这是让 120Hz 设备几乎无感的原因。
+///   · 只在窗口**走满**且**全程没见过快帧**时才撤回。
+///     切频期间的慢帧不能当反证（能上 120 的面板在切过去之前也是慢的），
+///     所以「不通过」必须等满窗口 —— 这也决定了 60Hz 设备的提示延时 = 0.8s。
+///
+/// 窗口结束后（无论通过与否）都立刻开下一个窗口 → 开着 2x 就持续监控，
+/// 面板中途被锁回 60Hz 也会在 0.8s 内被撤回。
 function speed_up_probe_tick() {
     if (!variable_global_exists("speed_up_probe_state")) {
         return;
@@ -49,47 +61,31 @@ function speed_up_probe_tick() {
         return;   // 空闲：没开 2x
     }
 
-    // ---- 空转期：等面板切过去，这期间不采样（否则读到的是切换前的旧节奏）----
-    if (global.speed_up_probe_state == 1) {
-        global.speed_up_probe_left -= delta_time;
-        if (global.speed_up_probe_left > 0) {
+    // ---- 提前通过：一帧达标就够（无需等窗口走满）----
+    if (delta_time > 0) {
+        if (1000000 / delta_time >= SPEED_UP_MIN_OK_FPS) {
+            global.speed_up_probe_state = 1;      // 重启窗口继续监控
+            global.speed_up_probe_left = SPEED_UP_PROBE_WARMUP_US;
             return;
         }
-        // 进入采样期
-        global.speed_up_probe_state = 2;
-        global.speed_up_probe_left = SPEED_UP_PROBE_SAMPLE_US;
-        global.speed_up_probe_max_fps = 0;
-        return;
     }
 
-    // ---- 采样期：记录窗口内最快的一帧 ----
-    if (delta_time > 0) {
-        var _inst = 1000000 / delta_time;
-        if (_inst > global.speed_up_probe_max_fps) {
-            global.speed_up_probe_max_fps = _inst;
-        }
-    }
     global.speed_up_probe_left -= delta_time;
     if (global.speed_up_probe_left > 0) {
         return;
     }
 
-    // ---- 窗口结束 → 判定 ----
-    var _best = global.speed_up_probe_max_fps;
-
-    // 阈值取 70 而非 100：双阈值不能定太高。
-    //   60Hz 面板：帧时恒为 16.6ms ≈ 60fps（离 70 还差一截，能抓准）
-    //   120Hz 面板在重负载下可能只跑到 80~110fps —— 用 100 会把这种情况误判成“不支持”。
-    //   70~100 属模糊区，不动（宁可放过，也不要误撤掉真的支持 2x 的设备）。
-    if (_best >= SPEED_UP_MIN_OK_FPS) {
-        // 面板确实能上 120 → 开下一个窗口继续监控（不缓存结论）
-        global.speed_up_probe_state = 1;
-        global.speed_up_probe_left = SPEED_UP_PROBE_INTERVAL_US;
-        global.speed_up_probe_max_fps = 0;
+    // ---- 空转期满、全程未见快帧 → 再给采样期一次机会（照顾切频慢的设备）----
+    if (global.speed_up_probe_state == 1) {
+        global.speed_up_probe_state = 2;
+        global.speed_up_probe_left = SPEED_UP_PROBE_SAMPLE_US;
         return;
     }
 
-    // 面板上不去 120（当前被锁在 60Hz / 面板本身只有 60Hz）→ 撤回 1x 并提示
+    // ---- 采样期满、仍未见快帧 → 面板确实上不去 120，撤回 1x 并提示 ----
+    // 阈值取 70 而非 100：60Hz 面板帧时恒为 16.6ms ≈ 60fps（离 70 有明确间隔，抓得准）；
+    // 120Hz 面板在重负载下可能只跑 80~110 —— 用 100 会把真支持的设备误撤。
+    // 70~100 属模糊区，选择放过（宁可少提示一次，也不要误撤掉能用的设备）。
     global.speed_up_active = false;
     global.speed_up_probe_state = 0;
     global.speed_up_probe_left = 0;
@@ -104,10 +100,11 @@ function speed_up_probe_tick() {
 
 /// @description 切换 1x / 2x 倍速（触屏按钮与 shift 键都必须走这里，别再各自调 game_set_speed）
 ///
-/// 开启时**立刻**切到 120 并开一个探测窗口；约 1.4s 后若面板确实上不去 120，会被
-/// speed_up_probe_tick 自动撤回 1x 并提示。开着期间持续复检 → 中途锁回 60Hz 也会被撤回。
+/// 开启时**立刻**切到 120 并开一个探测窗口。能上 120 的设备通常**一两帧内就通过**（几乎无感）；
+/// 上不去的设备最多 0.8s 后被 speed_up_probe_tick 撤回 1x 并提示。开着期间持续监控 →
+/// 中途锁回 60Hz 也会被撤回。
 ///
-/// ⚠️ 「返回 true」只代表**已切入 2x**，不代表**已确认可用** —— 不可用的设备会在约 1 秒后被
+/// ⚠️ 「返回 true」只代表**已切入 2x**，不代表**已确认可用** —— 不可用的设备最多 0.8s 后被
 ///    tick 撤回 + 提示。调用方照返回值同步按钮即可；撤回后实例变量由
 ///    obj_battle/Step_0.gml 顶部的 speed_up = global.speed_up_active; 每帧纠正。
 ///
@@ -186,6 +183,5 @@ function speed_up_init() {
     }
     global.speed_up_probe_state = 0;      // 0=空闲 1=空转期 2=采样期
     global.speed_up_probe_left = 0;
-    global.speed_up_probe_max_fps = 0;
     global.speed_up_retract_notified = false;
 }
