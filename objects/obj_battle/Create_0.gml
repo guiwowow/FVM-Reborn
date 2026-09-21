@@ -131,16 +131,25 @@ global.eat_order = ds_list_create();
 ds_list_add(global.eat_order,"shield","shield_outer","normal","lilypad");
 
 // 网格植物存储数据结构
-global.grid_plants = ds_grid_create(global.grid_cols, global.grid_rows);
+// ⚠️⚠️ 尺寸必须是 (grid_cols+64) × (grid_rows+64)，不能是 grid_cols × grid_rows。
+//   原因：spawn_plant 的边界检查与 wrap 都是按 grid_cols+64 算的
+//   （scr_set_var_commands/scr_set_var_commands.gml:3-29：col<0 加 grid_cols+64，col>=grid_cols+64 减它），
+//   地图脚本也大量用 col = grid_cols（越界一格）这类写法，例如
+//       VM_SpawnPlant("oil_lamp", 9, brains_count + 1, 0, 0, 0)   // 9 列地图里 col=9
+//   网格建小了 → spawn_plant 里那句 ds_grid_get(global.grid_plants, col, row) 越界
+//   → **原生硬崩**（2026-09-21 真机面包屑显示崩在 VM_SpawnPlant，报错都弹不出来）。
+var _gw = global.grid_cols + 64;
+var _gh = global.grid_rows + 64;
+global.grid_plants = ds_grid_create(_gw, _gh);
 
 //重置任务进度
 with obj_task_manager{
 	reset_task_state()
 }
 
-// 初始化网格
-for (var col = 0; col < global.grid_cols; col++) {
-    for (var row = 0; row < global.grid_rows; row++) {
+// 初始化网格（**整张**都要填：越界格若留着 undefined，ds_list_size(undefined) 一样会崩）
+for (var col = 0; col < _gw; col++) {
+    for (var row = 0; row < _gh; row++) {
         // 每个网格存储一个 ds_list，包含该网格的所有植物实例
         var plant_list = ds_list_create();
         ds_grid_set(global.grid_plants, col, row, plant_list);
