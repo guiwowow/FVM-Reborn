@@ -2829,7 +2829,8 @@ function VM_Execute(vm, buf, name) {
 
                     var _fn = vm.functions[_func_id];
                     // 面包屑：记录即将执行的宿主函数（地图脚本崩在原生层时这是唯一线索）
-                    if (variable_struct_exists(vm, "func_names")) {
+                    // 逐 CALL 记录：只在追踪窗口内写（外面写了就是每帧几十次写盘 → 帧率掉半）
+                    if (global._vm_trace_detail && variable_struct_exists(vm, "func_names")) {
                         vm_trace("  CALL " + string(vm.func_names[_func_id]) + " argc=" + string(_arg_count));
                     }
                     var _result = script_execute_ext(_fn, _args);
@@ -3099,7 +3100,8 @@ function VM_Execute_debug(vm, buf, name) {
 
                     var _fn = vm.functions[_func_id];
                     // 面包屑：记录即将执行的宿主函数（地图脚本崩在原生层时这是唯一线索）
-                    if (variable_struct_exists(vm, "func_names")) {
+                    // 逐 CALL 记录：只在追踪窗口内写（外面写了就是每帧几十次写盘 → 帧率掉半）
+                    if (global._vm_trace_detail && variable_struct_exists(vm, "func_names")) {
                         vm_trace("  CALL " + string(vm.func_names[_func_id]) + " argc=" + string(_arg_count));
                     }
                     var _result = script_execute_ext(_fn, _args);

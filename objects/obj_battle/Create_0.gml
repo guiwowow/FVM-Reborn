@@ -200,16 +200,23 @@ for(var i = 0 ; i < global.grid_rows ; i++){
 			
 		}
 	}
-	var new_x = global.grid_offset_x -1 * global.grid_cell_size_x
-	var new_y = global.grid_offset_y + i * global.grid_cell_size_y
-	var grid_pos = get_grid_position_from_world(new_x,new_y)
-	var cat_inst = instance_create_depth(grid_pos.x - 10, grid_pos.y+10, 0,obj_cat);
-	cat_inst.row = i
-	if global.row_feature[i] == "water" || global.map_id == "undersea_vortex"{
-		cat_inst.sprite_index = spr_crab
-		cat_inst.idle_anim = 8
-		cat_inst.awake_anim = 6
-		cat_inst.attack_anim = 9
+	// 初始猫（小推车）—— **必须受 global._VM_spawn_cats 门控**
+	// 地图脚本用 VM_SpawnCats(0) 关掉它（「我是老鼠」这类扮演老鼠的图没有猫），
+	// 该函数只写 global._VM_spawn_cats（scr_command_VM.gml:738），
+	// 而本工程原先**没有任何地方读这个全局** → 脚本喊了完全没用，猫照出。
+	// 联机版这里是 if (global._VM_spawn_cats) { ... }，本工程补齐。
+	if (global._VM_spawn_cats) {
+		var new_x = global.grid_offset_x -1 * global.grid_cell_size_x
+		var new_y = global.grid_offset_y + i * global.grid_cell_size_y
+		var grid_pos = get_grid_position_from_world(new_x,new_y)
+		var cat_inst = instance_create_depth(grid_pos.x - 10, grid_pos.y+10, 0,obj_cat);
+		cat_inst.row = i
+		if global.row_feature[i] == "water" || global.map_id == "undersea_vortex"{
+			cat_inst.sprite_index = spr_crab
+			cat_inst.idle_anim = 8
+			cat_inst.awake_anim = 6
+			cat_inst.attack_anim = 9
+		}
 	}
 }
 
