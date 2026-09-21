@@ -73,3 +73,35 @@ function get_load_sprite(_name) {
     //    返回一个一定存在的精灵，避免返回 -1 让调用方崩。
     return spr_cloud_daytime;
 }
+
+/// @function shell_print(_msg)
+/// @desc 联机版宿主提供的控制台输出函数 —— 本工程没有、本 runtime 也**不存在**
+///       （2026-09-21 双查：GmlSpec.xml 命中 0、libyoyo.so 命中 0）。
+///
+/// ⚠️ 这是**真机崩溃点**，不是小事：
+///   scr_command_VM.gml 里有 ~60 处 shell_print 调用，其中 `VM_ShellPrint` 是**暴露给地图脚本**的
+///   → 脚本一调用就 "Variable shell_print(...) not set before reading it" → 游戏直接崩，
+///   面包屑最后一条正是 CALL VM_ShellPrint argc=2。
+///   其余调用都在调试/dump 路径上，平时不跑，所以一直没暴露。
+///
+/// 补一个替身转发到 show_debug_message（该函数双查确认存在）。
+function shell_print(_msg) {
+    show_debug_message(string(_msg));
+}
+
+/// @function network_active_skill(_type, _col, _row, _level)
+/// @desc 联机版的「宝石主动技能」实现，住在 scr_network_aux_function —— **本工程没移植该脚本**。
+///       名字带 network 但实现其实是纯本地的（laser/bomb/freeze/cateye/starlight 的生成逻辑）。
+///       唯一调用点是控制台命令 `sh_skill`（scr_set_var_commands.gml:356，且需要 sudologin）。
+///       这里补一个不崩的替身：打日志 + 提示，避免"敲一下就闪退"。
+///       日后若要让控制台技能可用，把 scr_network_aux_function 里这两个函数整段搬过来即可。
+function network_active_skill(_type, _col, _row, _level) {
+    show_debug_message("[VM] network_active_skill 未移植（单机版不提供）：" + string(_type) + " Lv=" + string(_level));
+    show_notice("该技能命令在单机版不可用", 120);
+}
+
+/// @function network_broadcast_active_skill(_type, _col, _row, _level)
+/// @desc 联机版的技能广播（只对客户端发包）—— 单机版无客户端，空实现即可。
+function network_broadcast_active_skill(_type, _col, _row, _level) {
+    // 单机模式（global.network.mode = "off"）无需广播
+}

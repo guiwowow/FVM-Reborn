@@ -3412,17 +3412,17 @@ function VM_MetaInfo() {
     shell_print("[VM] ==== meta info ====");
     shell_print("[VM] rng_state = " + string(variable_struct_get(_vm, "rng_state")));
     if (instance_exists(obj_battle)) {
-        shell_print("[VM] wave = " + string(obj_battle.current_wave) + " (prev " + _g("_VM_prev_wave") + ")");
-        shell_print("[VM] subwave = " + string(obj_battle.current_subwave) + " (prev " + _g("_VM_prev_subwave") + ")");
+        shell_print("[VM] wave = " + string(obj_battle.current_wave) + " (prev " + variable_global_get("_VM_prev_wave") + ")");
+        shell_print("[VM] subwave = " + string(obj_battle.current_subwave) + " (prev " + variable_global_get("_VM_prev_subwave") + ")");
     }
-    shell_print("[VM] last_created_card = " + _g("_VM_last_created_card"));
-    shell_print("[VM] last_destroyed_card = " + _g("_VM_last_destroyed_card"));
-    shell_print("[VM] last_created_enemy = " + _g("_VM_last_created_enemy"));
-    shell_print("[VM] last_killed_enemy = " + _g("_VM_last_killed_enemy"));
-    shell_print("[VM] last_idle_platform = " + _g("_VM_last_idle_platform"));
-    shell_print("[VM] last_clicked_button = " + _g("_VM_last_clicked_button"));
-    shell_print("[VM] last_key = " + _g("_VM_last_key"));
-    shell_print("[VM] card_level_cap = " + _g("_VM_card_level_cap") + ", max_slots = " + _g("_VM_max_slots"));
+    shell_print("[VM] last_created_card = " + variable_global_get("_VM_last_created_card"));
+    shell_print("[VM] last_destroyed_card = " + variable_global_get("_VM_last_destroyed_card"));
+    shell_print("[VM] last_created_enemy = " + variable_global_get("_VM_last_created_enemy"));
+    shell_print("[VM] last_killed_enemy = " + variable_global_get("_VM_last_killed_enemy"));
+    shell_print("[VM] last_idle_platform = " + variable_global_get("_VM_last_idle_platform"));
+    shell_print("[VM] last_clicked_button = " + variable_global_get("_VM_last_clicked_button"));
+    shell_print("[VM] last_key = " + variable_global_get("_VM_last_key"));
+    shell_print("[VM] card_level_cap = " + variable_global_get("_VM_card_level_cap") + ", max_slots = " + variable_global_get("_VM_max_slots"));
     if (variable_global_exists("banned_gems_online")) {
         shell_print("[VM] banned_gems = [" + string(global.banned_gems_online) + "]");
     }
@@ -3430,8 +3430,8 @@ function VM_MetaInfo() {
         var _bc = ds_map_keys_to_array(global.banned_cards_online);
         shell_print("[VM] banned_cards(" + string(array_length(_bc)) + ") = [" + string(_bc) + "]");
     }
-    shell_print("[VM] battle_start_done = " + _g("_VM_battle_start_done") + ", room_ready_done = " + _g("_VM_room_ready_done"));
-    shell_print("[VM] event_enabled = " + _g("_VM_event_enabled") + ", sync_exec = " + _g("_VM_sync_exec"));
+    shell_print("[VM] battle_start_done = " + variable_global_get("_VM_battle_start_done") + ", room_ready_done = " + variable_global_get("_VM_room_ready_done"));
+    shell_print("[VM] event_enabled = " + variable_global_get("_VM_event_enabled") + ", sync_exec = " + variable_global_get("_VM_sync_exec"));
     shell_print("[VM] mem = " + string(array_length(_vm.mem_val)) + ", strings = " + string(array_length(_vm.strings)) + ", functions = " + string(array_length(_vm.functions)));
     shell_print("[VM] debug_mode = " + string(global._VM_debug_mode) + (global._VM_debug_block != "" ? " (block: " + global._VM_debug_block + ")" : ""));
     return "已输出到控制台";
