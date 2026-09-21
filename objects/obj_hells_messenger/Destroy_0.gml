@@ -18,9 +18,9 @@ with obj_battle{
 		}
 	}
 }
-global.save_data.unlocked_items.arno_killed = true
+global.save_data[$ "unlocked_items"][$ "arno_killed"] = true
 if global.save_data.unlocked_items.mario_mouse_killed && global.save_data.player.level < 7{
-	global.save_data.player.level = 7
+	global.save_data[$ "player"][$ "level"] = 7
 	show_notice("神殿已解锁",60)
 }
 ds_list_destroy(avaliable_pos)

@@ -53,25 +53,25 @@ if (_space) {
 									}
 								}
 								if global.level_data.id == "champagne_island_water"{
-									global.save_data.unlocked_items.elite_unlocked = true
+									global.save_data[$ "unlocked_items"][$ "elite_unlocked"] = true
 								}
 								if global.level_data.id == "abyss"{
-									global.save_data.unlocked_items.shovel = "copper"
+									global.save_data[$ "unlocked_items"][$ "shovel"] = "copper"
 								}
 								if global.level_data.id == "macchiato_port"{
-									global.save_data.unlocked_items.shovel = "silver"
+									global.save_data[$ "unlocked_items"][$ "shovel"] = "silver"
 								}
 								if global.level_data.id == "snowcap_volcano"{
-									global.save_data.unlocked_items.shovel = "gold"
+									global.save_data[$ "unlocked_items"][$ "shovel"] = "gold"
 								}
 								if global.level_data.id == "tower_cake_35_3"{
-									global.save_data.player.crown_version = global.game_version
+									global.save_data[$ "player"][$ "crown_version"] = global.game_version
 								}
 								if global.level_file.rewards[1].player_level >= global.save_data.player.level{
-									global.save_data.player.level = global.level_file.rewards[1].player_level
+									global.save_data[$ "player"][$ "level"] = global.level_file.rewards[1].player_level
 								}
 								if global.level_file.rewards[1].skill_level >= global.save_data.unlocked_items.max_skill_level{
-									global.save_data.unlocked_items.max_skill_level = global.level_file.rewards[1].skill_level
+									global.save_data[$ "unlocked_items"][$ "max_skill_level"] = global.level_file.rewards[1].skill_level
 									var length = array_length(global.save_data.unlocked_cards)
 									for (var i = 0;i < length;i++){		
 										global.save_data.unlocked_cards[i].skill = global.save_data.unlocked_items.max_skill_level
