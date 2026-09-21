@@ -41,7 +41,9 @@ if (first_frame) {
     
     for (var c = cur_start_c; c < cur_start_c + width; c++) {
         for (var r = cur_start_r; r < cur_start_r + length; r++) {
-            if (r < global.grid_rows && c < global.grid_cols) {
+            // ⚠️ 必须同时校验**下界**：地图脚本可以给出任意 start_col/start_row/width/length，
+            //    负数索引会让 grid_terrains[r][c] 越界（表现为进图原生崩溃）。
+            if (r >= 0 && c >= 0 && r < global.grid_rows && c < global.grid_cols) {
                 global.grid_terrains[r][c].type = "normal";
             }
         }
@@ -64,6 +66,11 @@ if (state == "idle") {
         state = "moving";
         idle_timer = 0;
         initial_idle_done = true;
+        // VM Hook：平台等待结束、开始移动（从联机版移植）。
+        // 注意：上游这里没加 buffer_exists 守卫 —— VM_Execute 内部对不存在的 buf 自身有保护，
+        // 但为与其它 hook 一致、且避免无谓调用，这里补上。
+        global._VM_last_idle_platform = id;
+        if (buffer_exists(global._VM_PLATFORM_IDLE_END)) VM_Execute(global.__vm, global._VM_PLATFORM_IDLE_END, "_VM_PLATFORM_IDLE_END");
         move_progress = 0;
         step_migrated = false;
     }

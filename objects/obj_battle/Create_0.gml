@@ -19,6 +19,43 @@ instance_create_depth(mouse_x,mouse_y,0,obj_player_character)
 
 instance_create_depth(room_width-200,room_height-25,0,obj_level_progress_bar)
 
+// =====================================================================
+// VM 地图脚本：战斗内全局状态（从联机版移植，2026-09-20）
+// =====================================================================
+// _VM_battle_start_done：_VM_BATTLE_START 块是否已触发（obj_event_manager 置 true）
+global._VM_battle_start_done = false;
+// _VM_wave_auto：波次自动推进开关。默认 true；地图脚本可用 VM_SetWave(0) 关掉
+//   自动推进、完全接管波次。⚠️ 必须在这里初始化 —— VM_SetWave 是唯一赋值点，
+//   而 obj_battle/Step_0.gml 每帧都要读它。
+global._VM_wave_auto = true;
+global._VM_create_counter = 100000;
+ds_map_clear(global._VM_id_to_real);
+ds_map_clear(global._VM_real_to_vm_id);
+
+// 固定 64 个贴图槽：地图脚本用 VM_SetDrawSlot/VM_SetDrawSlot_front 往地图上放自定义贴图。
+// map_draw_slots 画在 obj_battle/Draw_0（地图层），map_draw_slots_front 画在
+// obj_flame_manager/Draw_0（火焰 UI 前）。
+// ⚠️ 必须初始化：_vm_set_draw_slot() 会对 _slots[slot] 直接赋值，没有存在性守卫。
+global.map_draw_slots = [];
+repeat (64) { array_push(global.map_draw_slots, { sprite: noone, x: 0, y: 0, alpha: 1, image_angle: 0, image_xscale: 1, image_yscale: 1 }); }
+global.map_draw_slots_front = [];
+repeat (64) { array_push(global.map_draw_slots_front, { sprite: noone, x: 0, y: 0, alpha: 1, image_angle: 0, image_xscale: 1, image_yscale: 1 }); }
+
+// 地图背景交叉淡入（移植自联机版 obj_battle/Create_0）：
+// 地图脚本用 VM_SetMapBackground(name, step) 换背景时，只是把 map_sprite_target 指向新贴图，
+// 真正的过渡与绘制在这里初始化、在 obj_battle/Draw_0 里做。**缺了这两处，脚本换背景就完全没效果**
+// ——背景始终是内置地图（2026-09-21 三界花园「背景不对」的根因）。
+// ⚠️ 必须**无条件**重置 target（联机版同款）。不能保留上一局的值：
+//   第 1 局跑过脚本 → target = 脚本贴图；第 2 局普通地图若沿用，就会显示上一局的花园背景。
+//   脚本要设背景，一律写在 _VM_BATTLE_START 里（它由 obj_event_manager 在**本 Create 之后**执行），
+//   所以这里重置不会误伤 —— 插件生态就是按这个时序设计的。
+global.map_sprite_current = global.level_data.level_sprite;
+global.map_sprite_target = global.level_data.level_sprite;
+global.map_fade_alpha = 0;
+global.map_fade_step = 0.02;   // 默认过渡速度：≈50 帧 / 0.83 秒
+
+vm_trace("obj_battle.Create 完成（贴图槽已建）")
+
 
 global.selected_slot = noone;
 global.current_seed = noone;
@@ -332,6 +369,7 @@ function enemy_subwave_summon(){
             var new_y = global.grid_offset_y + (target_row - 1) * global.grid_cell_size_y;
             
             var grid_pos = get_grid_position_from_world(new_x, new_y);
+            global._mod_pending_enemy_id = enemy_list[i].type;  // mod 敌人创建前写入 pending id
             var new_enemy = instance_create_depth(grid_pos.x+30, grid_pos.y + 38, 0, enemy_obj);
             
             // 更新统计信息

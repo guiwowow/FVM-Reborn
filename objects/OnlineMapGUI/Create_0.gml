@@ -205,7 +205,8 @@ function finish_download(_item, _dest) {
             show_error_dialog("不支持的压缩包", "地图包（" + string(_item.title) + "）是 .rar 格式，安卓端不支持（仅标准 zip）。\n请让作者重新上传 .zip 版本。")
         } else if (_code == -3) {
             // 压缩包文件名不是 UTF-8（旧版打包工具）
-            show_error_dialog("压缩包格式过旧", "压缩包（" + string(_item.title) + "）的文件名不是 UTF-8 编码（旧版打包工具），安卓无法解压。\n请让作者用新版 7-Zip 重新打包上传。")
+            // 诊断串必须一起显示：[导出错误报告] 能整份复制，便于定位重写器是在哪一步放弃的
+            show_error_dialog("压缩包格式过旧", "压缩包（" + string(_item.title) + "）的文件名不是 UTF-8 编码（旧版打包工具），安卓无法解压。\n请让作者用新版 7-Zip 重新打包上传。\n\n" + string(global.unzip_diag))
         } else {
             // 失败详情写进正文：点【导出错误报告】即可复制完整链路诊断
             // （try0/1/2 返回值 · 平铺改名数 · json 数 · 提升根级数）

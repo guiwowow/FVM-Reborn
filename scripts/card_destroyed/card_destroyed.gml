@@ -2,6 +2,11 @@
 /// @description 当植物销毁时调用，更新网格数据
 /// @param {instance} plant_inst 植物实例
 function card_destroyed(plant_inst) {
+    // VM Hook：卡片销毁（从联机版移植）。
+    // 帧内去重：显式调用与 Destroy 事件会各入队一次，靠 _VM_dead_snaps 避免同一帧触发两次。
+    global._VM_last_destroyed_card = plant_inst.id;
+    if (buffer_exists(global._VM_CARD_DESTROYED) && !ds_map_exists(global._VM_dead_snaps, plant_inst.id)) VM_QueueHook(global._VM_CARD_DESTROYED, "card_del", plant_inst.id);
+
     var col = plant_inst.grid_col;
     var row = plant_inst.grid_row;
     

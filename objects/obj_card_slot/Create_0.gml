@@ -203,3 +203,9 @@ _prev_down0 = false;
 // 鼠标位置跳变检测用
 _prev_mx = -10000;
 _prev_my = -10000;
+
+// Mod 卡自定义贴图（脚本 VM_SetCardSprite）：默认 -1 = 用原卡面
+vm_card_spr = -1
+vm_place_preview = -1
+vm_card_spr_addx = 0
+vm_card_spr_addy = 0

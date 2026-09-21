@@ -18,8 +18,33 @@ global.level_file = {}
 global.level_name = "曲奇岛"
 global.level_data = {}
 global.debug = 0
+
+// ---- 地图脚本 VM / mod 卡系统（从联机版移植，2026-09-20）----------------
+// mod_enabled：工作目录下存在 mod_enable.txt 时才启用 Mod 卡系统。
+//   安卓 release 包的工作目录玩家改不了 → 恒为 false → 整条 mod 链路零开销。
+// _mod_pending_card_id：创建 mod 卡实例前传入的卡 id（src_mod 用）。
+// _VM_cur_card：mod 卡 VM 块执行时的"当前实例"上下文（src_mod 用）。
+// 三个都必须在 scr_command_VM / src_mod 的顶层代码跑之前就存在。
+// 先把内置的 mod 内容放进沙盒（作者产出的卡/武器将来由下载管线落到同一棵树）
+install_bundled_mods()
+// mod 是否可用 = 相对树里到底有没有卡。不再依赖 mod_enable.txt：
+//   ① 安卓上玩家没地方放那个文件（app 私有目录，非 debuggable 连 adb 都进不去）；
+//   ② 按「作者产出、玩家只管玩」的分发模型，有内容就该生效，玩家不该做任何事。
+// 没有任何 mod 内容时 5 个 init 会各自 no-op（目录不存在直接 return -1），零开销。
+global.mod_enabled = directory_exists("mod/cards/") or directory_exists(working_directory + "mod/cards/")
+global._mod_pending_card_id = ""
+global._VM_cur_card = noone
 global.laboretory_room = false
 global.game_version = "2.4.1.1"
+
+// 崩溃面包屑检查：上次运行若崩在半路（没写 OK end），这里把追踪内容弹出来。
+// 放在启动早期即可 —— 弹窗由 room_init 里的 obj_notice_controller 在 Draw 时渲染。
+vm_trace_check_on_launch()
+
+// 随包内置的实验室关卡（datafiles/bundled_stages/ → 沙盒 laboratory/）
+// 在线下载暂时拿不到这些图时，用它验证地图脚本 VM 与 mod 插件。
+// 只拷沙盒里还没有的，不覆盖玩家自己下载/改过的同名文件。
+install_bundled_stages()
 global.tower_level_click = false
 global.tower_cake_page = 1
 Music_Init()

@@ -61,3 +61,10 @@ with obj_mucus{
 		other.move_speed_modify = 1
 	}
 }
+
+// 受伤 VM 挂载点：本帧血量下降 → 触发脚本的 _VM_ENEMY_DAMAGED
+if (pre_hp > hp && buffer_exists(global._VM_ENEMY_DAMAGED)) {
+	global._VM_last_damaged_enemy = id;
+	VM_Execute(global.__vm, global._VM_ENEMY_DAMAGED, "_VM_ENEMY_DAMAGED");
+}
+pre_hp = hp;

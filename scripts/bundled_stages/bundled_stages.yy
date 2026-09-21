@@ -1,0 +1,13 @@
+{
+  "$GMScript":"v1",
+  "%Name":"bundled_stages",
+  "isCompatibility":false,
+  "isDnD":false,
+  "name":"bundled_stages",
+  "parent":{
+    "name":"assistant",
+    "path":"folders/脚本/assistant.yy",
+  },
+  "resourceType":"GMScript",
+  "resourceVersion":"2.0",
+}

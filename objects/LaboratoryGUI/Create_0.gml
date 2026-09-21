@@ -83,10 +83,22 @@ function apply_local_filter() {
 function refresh_custom_stages() {
     self.state.laboratory_manager.reset()
     var _result = self.state.laboratory_manager.load_all_stages()
+    self.state.stage_ids = self.state.laboratory_manager.get_stage_ids()
     if (_result.is_failed()) {
         show_error_dialog("加载关卡失败", "有部分关卡加载失败，它们不会出现在列表里。\n点[导出错误报告]可复制完整原因。\n\n" + string(_result.message))
+    } else if (variable_global_exists("_lab_scan_json_paths")
+            && array_length(global._lab_scan_json_paths) > array_length(self.state.stage_ids)) {
+        // 扫到了 json，但加载出来的关卡更少 → 中间有文件被跳过。
+        // 把两边都摊出来，避免"下载成功却没显示"只能靠猜。
+        var _all = ""
+        for (var _li = 0; _li < array_length(global._lab_scan_json_paths); _li++) {
+            _all += string(global._lab_scan_json_paths[_li]) + "\n"
+        }
+        show_error_dialog("部分地图没显示",
+            "扫描到 " + string(array_length(global._lab_scan_json_paths)) + " 个关卡文件，"
+            + "但只加载出 " + string(array_length(self.state.stage_ids)) + " 个地图。\n\n"
+            + "扫描到的文件：\n" + _all)
     }
-    self.state.stage_ids = self.state.laboratory_manager.get_stage_ids()
     apply_local_filter()
 }
 

@@ -1,0 +1,13 @@
+{
+  "$GMScript":"v1",
+  "%Name":"scr_vm_compat",
+  "isCompatibility":false,
+  "isDnD":false,
+  "name":"scr_vm_compat",
+  "parent":{
+    "name":"shell",
+    "path":"folders/脚本/shell.yy",
+  },
+  "resourceType":"GMScript",
+  "resourceVersion":"2.0",
+}

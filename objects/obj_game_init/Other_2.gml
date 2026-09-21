@@ -11,6 +11,9 @@ info_island_init()
 goods_registry_init()
 shop_init()
 maps_init()
+// 地图脚本 VM（从联机版移植）：创建虚拟机实例。
+// 必须在任何 VM_* 调用之前 —— 后面 obj_battle / 卡片事件都会用到 global.__vm。
+global._vm = VM_Create();
 enemy_init()
 enemy_info_island_init()
 plus_card_init()
@@ -28,6 +31,17 @@ randomise()
 // 全局植物注册表
 global.plant_registry = ds_map_create();
 cards_init()
+
+// mod 卡片注册（从联机版移植）：global.mod_enabled 为真时扫描工作目录下
+// mod/cards/*.json，注册卡池/植物数据/技能/商店/图鉴，配套同名 .bin 是它的 VM 代码。
+// 单机下 mod_enable.txt 不存在 → global.mod_enabled = false → 整段跳过，零开销。
+if (global.mod_enabled) {
+	src_mod_init()
+src_mod_weapons_init()
+src_mod_gems_init()
+src_mod_attires_init()
+src_mod_enemies_init()
+}
 
 global.player_name = "Player";
 global.total_time = 0

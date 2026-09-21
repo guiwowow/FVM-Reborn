@@ -35,6 +35,11 @@ if obj_player_info_ui.menu_type == 0 && unlock{
 		var map_button_array = struct_get(ds_map_find_value(global.maps_map,global.map_id),"levels_data")
 		global.level_data = map_button_array[level_index]
 		show_debug_message(global.level_data)
+
+		// 内置关卡没有地图脚本：把 VM 重置为「无脚本」状态。
+		// ⚠️ 这句不能省 —— 否则先玩过带 .bin 的实验室地图、再进普通关卡，
+		// VM 里会残留上一张图的脚本块（波次钩子等会继续响应）。
+		VM_InitRoomEntry(undefined);
 	}
 	else{
 		global.gui_stack.to(room_tower_cake)

@@ -4,16 +4,29 @@
 function load_custom_deck(deck_index) {
     // 清空当前卡组并按槽位重建
     ds_list_clear(global.selected_deck);
+
+    // VM 卡槽上限：地图脚本用 VM_SetMaxSlots() 限制本局卡槽数。
+    // 无脚本时 _VM_max_slots = -1 → 走原逻辑的 21。
+    var _max_slot = 21;
+    if (global._VM_max_slots >= 0) {
+        _max_slot = global._VM_max_slots;
+    }
+
     deck_ensure_size();
 
     // 添加新卡牌（保留存档槽位；旧紧凑档顺次填前 N 槽自动兼容）
     var card_ids = global.save_data.saved_decks[deck_index].card_id;
     var len = array_length(card_ids);
     for(var i = 0; i < len; i++) {
+        if (deck_slot_count() >= _max_slot) break;   // VM 卡槽上限
         var cid = card_ids[i];
         if (cid == "" || is_undefined(cid) || cid == noone) continue; // 跳过空槽
         var info = get_card_info(cid);
         if (info != false) {
+            // VM 禁卡：地图脚本用 VM_BanCard() 禁掉某些卡，被禁的卡不进卡组。
+            // global.banned_cards_online 在 scr_command_VM 顶层创建，无脚本时恒为空 map。
+            if (ds_map_exists(global.banned_cards_online, info.id)
+                && ds_map_find_value(global.banned_cards_online, info.id) == true) continue;
             add_to_deck(cid, info.shape, i);
         }
     }

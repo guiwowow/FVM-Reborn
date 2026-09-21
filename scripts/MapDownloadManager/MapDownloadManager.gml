@@ -199,12 +199,22 @@ function MapDownloadManager() constructor {
     /// @param {Array} _map 输出映射 [[原名, 新名], ...]（GML 数组按引用传）
     /// @returns {Real} >0 = 重写的条目数；0 = 名字本来就全 ASCII（不必重写）；-1 = 不是标准 zip/结构异常（调用方回退旧逻辑）
     static zip_rewrite_names_ascii = function(_src, _dst, _prefix, _map) {
+        // 分段诊断：重写失败时能直接从弹窗看出卡在哪一步（-3 分支原本只显示固定文案）
+        if (!variable_global_exists("unzip_diag")) {
+            global.unzip_diag = ""
+        }
+        var _rw = function(_stage) {
+            global.unzip_diag += " | 重写[" + _stage + "]"
+        }
         var _in = buffer_load(_src)
         if (_in < 0) {
+            _rw("buffer_load失败=" + string(_in))
             return -1
         }
         var _size = buffer_get_size(_in)
+        _rw("读入=" + string(_size) + "B")
         if (_size < 22) {
+            _rw("过小")
             buffer_delete(_in)
             return -1
         }
@@ -222,12 +232,14 @@ function MapDownloadManager() constructor {
             }
         }
         if (_eocd < 0) {
+            _rw("找不到EOCD")
             buffer_delete(_in)
             return -1
         }
         var _count = buffer_peek(_in, _eocd + 10, buffer_u16)
         var _cd_off = buffer_peek(_in, _eocd + 16, buffer_u32)
         if (_cd_off + 46 > _size) {
+            _rw("cd_off越界=" + string(_cd_off))
             buffer_delete(_in)
             return -1
         }
@@ -256,12 +268,23 @@ function MapDownloadManager() constructor {
             _pos += 46 + _nl0 + _el0 + _cl0
         }
         if (!_has_high) {
+            _rw("无高字节条目→返回0")
             buffer_delete(_in)
             return 0
         }
+        _rw("有高字节，条目数=" + string(_count))
         // 3) 逐条目重建（局部头 + 数据原样 + 记录新偏移）
         var _out = buffer_create(65536, buffer_grow, 1)
         var _names = []
+        // json/bin 同 stem 共用同一个编号（2026-09-21 修「命名不对」）：
+        // 原实现每个条目各取一个编号 → <prefix>_file_11.json 与 <prefix>_file_10.bin
+        // → 两者编号不相干 → 只能靠 pair_script_bins 再复制一份 bin 才能配对
+        // → laboratory/ 里同时躺着 file_10.bin 和 file_11.bin（真机实测到的症状）。
+        // 改成按「去掉扩展名的 stem」分配编号，json 与 bin 天然同名配好对。
+        // 用两个并行数组而不是 ds_map：本函数很早退分支很多，数组不需要任何清理。
+        var _stem_names = []
+        var _stem_nums  = []
+        var _next_num   = 0
         var _flags = []
         var _methods = []
         var _times = []
@@ -289,6 +312,7 @@ function MapDownloadManager() constructor {
             var _cl = buffer_peek(_in, _pos + 32, buffer_u16)
             var _loff = buffer_peek(_in, _pos + 42, buffer_u32)
             if (_nl > 4096 or _el > 4096 or (_pos + 46 + _nl) > _size) {
+                _rw("守卫A@k" + string(k) + " nl=" + string(_nl) + " el=" + string(_el))
                 buffer_delete(_out)
                 buffer_delete(_in)
                 return -1
@@ -297,6 +321,7 @@ function MapDownloadManager() constructor {
             _pos += 46 + _nl + _el + _cl
             // zip64 / 加密：不支持，交回旧逻辑
             if (_cs == 4294967295 or _us == 4294967295 or _loff == 4294967295 or (_fl & 1) != 0) {
+                _rw("守卫B@k" + string(k) + " zip64/加密")
                 buffer_delete(_out)
                 buffer_delete(_in)
                 return -1
@@ -342,12 +367,77 @@ function MapDownloadManager() constructor {
                 }
                 _ext = string_lower(_ext)
             }
-            var _new = _prefix + "_file_" + string(array_length(_names))
-            if (_ext != "") {
-                _new += "." + _ext
+            // ---- 新名规则（2026-09-21 修正：该保留的名字必须保留）----
+            // 原先把所有条目都改成 <prefix>_file_N.ext。json 里的引用可以事后用
+            // patch_stage_json 修好，**但 .bin 是字节码，文件名是编译进去的，改不了**
+            //（改长度会破坏字节码里的绝对偏移）。
+            // 于是地图脚本写 VM_LoadSprite("s_spr_marinade_garden_1.png") 时，
+            // 磁盘上已经叫 map__xxx_file_3.png → 加载失败 → 自定义贴图不显示。
+            //
+            // 现在：只有 **json / bin**（归属追踪与 bin-json 配对依赖前缀）和
+            //        **非 ASCII 名**（安卓必然失配）才改名；
+            //        其余 ASCII 资源名**原样保留**（只去掉目录前缀做扁平化）→ 脚本按原名就能找到。
+            var _base_ascii = (_nl - _slash) > 0
+            for (var _aj = _slash; _aj < _nl; _aj++) {
+                if (buffer_peek(_in, _name_off + _aj, buffer_u8) >= 0x80) {
+                    _base_ascii = false
+                    break
+                }
             }
+            var _keep_name = _base_ascii and (_ext != "json") and (_ext != "bin")
+            if (_keep_name and array_contains(_names, _old)) {
+                _keep_name = false      // 同名条目（不同目录）退回编号命名，避免互相覆盖
+            }
+            // ---- mod/ 子树例外（2026-09-21）：作者「地图 + 卡」一包发的那条路 ----
+            // 格式：mod/<kind>/<卡名>.json + 同名 .bin + 贴图。这些名字一个都不能改：
+            //   · 卡名 = json 文件名（src_mod_init 用 filename_name 当卡 id）
+            //   · .bin 靠 string_replace(json, ".json", ".bin") 找同 stem
+            //   · 贴图名被编译进 .bin 与 json 里
+            // 所以整棵 mod/ 跳过改名与扁平化，**连目录前缀一起原样写回**。
+            // 只比较前 4 个字节（"mod/"），避免多字节名解码问题。
+            var _is_mod = false
+            if (_nl >= 4) {
+                _is_mod = (buffer_peek(_in, _name_off,     buffer_u8) == 109)   // 'm'
+                      and (buffer_peek(_in, _name_off + 1, buffer_u8) == 111)   // 'o'
+                      and (buffer_peek(_in, _name_off + 2, buffer_u8) == 100)   // 'd'
+                      and (buffer_peek(_in, _name_off + 3, buffer_u8) == 47)    // '/'
+            }
+            var _new;
+            if (_is_mod) {
+                // mod 文件名要求纯 ASCII（卡名会成为 card id，非 ASCII 在安卓文件名处理上不可靠）
+                _new = ""
+                for (var _mj = 0; _mj < _nl; _mj++) {
+                    _new += chr(buffer_peek(_in, _name_off + _mj, buffer_u8))
+                }
+            } else if (_keep_name) {
+                _new = _old
+            } else {
+                // 按 stem 分配编号：同 stem 的 json / bin 拿到同一个 N（见函数开头说明）
+                var _stem = (_ext != "")
+                    ? string_copy(_old, 1, string_length(_old) - string_length(_ext) - 1)
+                    : _old
+                var _num = -1
+                for (var _si = 0; _si < array_length(_stem_names); _si++) {
+                    if (_stem_names[_si] == _stem) {
+                        _num = _stem_nums[_si]
+                        break
+                    }
+                }
+                if (_num < 0) {
+                    _num = _next_num
+                    _next_num++
+                    array_push(_stem_names, _stem)
+                    array_push(_stem_nums, _num)
+                }
+                _new = _prefix + "_file_" + string(_num)
+                if (_ext != "") {
+                    _new += "." + _ext
+                }
+            }
+            
             // 数据起点：局部头 + 30 + 局部名长 + 局部 extra 长
             if (_loff + 30 > _size) {
+                _rw("守卫C@k" + string(k) + " loff=" + string(_loff))
                 buffer_delete(_out)
                 buffer_delete(_in)
                 return -1
@@ -356,12 +446,15 @@ function MapDownloadManager() constructor {
             var _lel = buffer_peek(_in, _loff + 28, buffer_u16)
             var _data_off = _loff + 30 + _lnl + _lel
             if (_data_off + _cs > _size) {
+                _rw("守卫D@k" + string(k) + " data_off=" + string(_data_off) + " cs=" + string(_cs))
                 buffer_delete(_out)
                 buffer_delete(_in)
                 return -1
             }
             var _local_off = buffer_tell(_out)
-            var _nlen_new = string_length(_new)
+            // 必须用**字节数**：zip 的头里存的是字节长。ASCII 时两者相同，
+            // 但 mod 文件名万一带多字节字符，string_length 会少算 → 头与数据错位、包损坏。
+            var _nlen_new = string_byte_length(_new)
             buffer_write(_out, buffer_u32, 0x04034b50)
             buffer_write(_out, buffer_u16, 20)
             buffer_write(_out, buffer_u16, _fl & ~8)
@@ -375,7 +468,17 @@ function MapDownloadManager() constructor {
             buffer_write(_out, buffer_u16, 0)
             buffer_write(_out, buffer_text, _new)
             buffer_copy(_in, _data_off, _cs, _out, _local_off + 30 + _nlen_new)
-            buffer_seek(_out, buffer_seek_end, 0)
+            // ⚠️⚠️ 这里是全流程的关键 bug 点（2026-09-21 定位）：
+            //   千万不要写 buffer_seek(_out, buffer_seek_end, 0)。
+            //   对 **buffer_grow** 而言，"end" 是**已扩容的容量**，不是"已写入长度"。
+            //   于是下一个条目的局部头会被写到容量位置，输出 zip 中间塞进大段空洞
+            //   → zip_unzip 定位不到中央目录 → 返回 0（提取 0 个文件）。
+            //   包越大、扩容次数越多越严重：16.9MB 的包表现为「重写条目=16 但解压 0 个」，
+            //   22.9MB 的包直接让位置读回负数 → buffer_create 收到 0xFFFFFFFF80000000 →
+            //   "Memory allocation failed: Attempting to allocate 18446744071562067968 bytes"。
+            //   这也解释了为什么离线用 Python 顺序写入复刻出来的是**完全合法**的 zip。
+            //   改为显式跳到本次拷贝的末尾：
+            buffer_seek(_out, buffer_seek_start, _local_off + 30 + _nlen_new + _cs)
             array_push(_names, _new)
             array_push(_flags, _fl & ~8)
             array_push(_methods, _me)
@@ -385,7 +488,10 @@ function MapDownloadManager() constructor {
             array_push(_csizes, _cs)
             array_push(_usizes, _us)
             array_push(_loffs, _local_off)
-            array_push(_map, [_old, _new])
+            // mod 条目不进 _map：它们是整棵原样保留的，不需要配对也不需要改 json 引用
+            if (!_is_mod) {
+                array_push(_map, [_old, _new])
+            }
         }
         if (array_length(_names) <= 0) {
             buffer_delete(_out)
@@ -407,7 +513,7 @@ function MapDownloadManager() constructor {
             buffer_write(_out, buffer_u32, _crcs[k])
             buffer_write(_out, buffer_u32, _csizes[k])
             buffer_write(_out, buffer_u32, _usizes[k])
-            buffer_write(_out, buffer_u16, string_length(_nm))
+            buffer_write(_out, buffer_u16, string_byte_length(_nm))
             buffer_write(_out, buffer_u16, 0)
             buffer_write(_out, buffer_u16, 0)
             buffer_write(_out, buffer_u16, 0)
@@ -425,14 +531,30 @@ function MapDownloadManager() constructor {
         buffer_write(_out, buffer_u32, _cd_size)
         buffer_write(_out, buffer_u32, _cd_start)
         buffer_write(_out, buffer_u16, 0)
-        // 注意：本 runtime 的 buffer_save_ext 第 4 个参数**不是文件名**
-        // （实测报错 "buffer_save_ext argument 4 incorrect type (string) expecting a Number"），
-        // 所以改用 buffer_resize 把 buffer 裁到实际写入长度 + buffer_save 保存整个 buffer。
+        // ⚠️ 存盘必须用**定长 buffer 精确拷贝**，不能只靠 buffer_resize + buffer_save：
+        //   _out 是 buffer_grow，而 buffer_get_size() 对 grow buffer 返回的是**已扩容的容量**
+        //   （16.9MB 的包，容量可能已涨到 33MB）。若 buffer_resize 在部分 runtime 上
+        //   对 grow buffer 不生效，buffer_save 就会把 EOCD 之后的大段空白一并写出
+        //   → zip_unzip 定位不到中央目录 → 返回 0（提取 0 个文件）。
+        //   真机症状正是「重写条目=16，但 zip_unzip 三个候选路径全返回 0」。
+        //   注：重写算法本身已离线逐行复刻验证过，产出的 zip 用 Python zipfile
+        //   能完整读出并解压全部条目，所以问题只在存盘这一步。
+        //   另：buffer_save_ext 第 4 个参数在本 runtime 不是文件名
+        //   （实测 "argument 4 incorrect type (string) expecting a Number"），也不能用。
         var _final = buffer_tell(_out);
-        buffer_resize(_out, _final);
-        buffer_save(_out, _dst)
-        buffer_delete(_out)
-        buffer_delete(_in)
+        var _fixed = buffer_create(_final, buffer_fixed, 1);
+        buffer_copy(_out, 0, _final, _fixed, 0);
+        buffer_save(_fixed, _dst);
+        buffer_delete(_fixed);
+        buffer_delete(_out);
+        buffer_delete(_in);
+        // 自检：把刚存下来的文件读回来核对大小，写进诊断串（真机上唯一的可见证据）
+        var _chk = buffer_load(_dst);
+        var _chk_size = (_chk >= 0) ? buffer_get_size(_chk) : -1;
+        if (_chk >= 0) {
+            buffer_delete(_chk);
+        }
+        global.unzip_diag += " | 重写存档实际=" + string(_chk_size) + " 期望=" + string(_final);
         return _n_total
     }
 
@@ -453,14 +575,15 @@ function MapDownloadManager() constructor {
             }
             file_find_close()
         }
-        if (_n > 0) {
-            return _n
-        }
-        var _dir = self.get_download_folder(_title)
-        if (!directory_exists(_dir)) {
-            return 0
-        }
-        return array_length(self.file_util.find_files_with_extension_recursively(_dir, ".json"))
+        // ⚠️ 这里**不能**回退去数下载目录（2026-09-21 修）：
+        //   下载失败时文件会残留在 laboratory/download/<目录>/ 里，而 json 没能提到根级
+        //   → 实验室列表扫不到（列表只递归扫 laboratory/），但这里数得到 → is_downloaded 误报为真
+        //   → start_download() 看到"已下载"就静默 return，玩家**再也下不动那张图**，
+        //     症状正是「线上显示已下载，但关卡列表里根本没有」。
+        //   判定标准必须是「列表能不能看见」：只看根级。
+        //   （两条解压路径成功时都会把 json 放到根级 —— 路径 A 直接解压到根级，
+        //     路径 B 由 promote_jsons_to_root 提升并删掉下载目录里的原件。）
+        return _n
     }
 
     /// @description 把下载目录里（已改名成 ASCII 的）关卡 json「提升」一份到实验室**根级**，
@@ -508,6 +631,69 @@ function MapDownloadManager() constructor {
         return _promoted
     }
 
+
+    /// @description 把地图脚本 .bin 改名成与它同名 json 的 ASCII 名（同 stem）。
+    /// 动机：原始地图包里 json 与脚本同 stem（如 baiguiyexing.json / baiguiyexing.bin），
+    /// 但 zip_rewrite_names_ascii / ascii_flatten 是按**条目顺序**编号成
+    /// <prefix>_file_N.ext 的，两者编号不相干 → 播放时
+    /// objects/StageDetail/Create_0.gml 里 string_replace(json_path, ".json", ".bin")
+    /// 找不到脚本，地图脚本静默失效。
+    /// 这里靠 _map 里记的旧名把两者重新配对。
+    /// @param {String} _root 实验室根目录（已解压完）
+    /// @param {Array<Array<String>>} _map [[旧名, 新名], ...]（会同步改写 bin 的新名）
+    /// @returns {Real} 配对成功的 .bin 数
+    static pair_script_bins = function(_root, _map) {
+        var _root2 = string_replace_all(string(_root), "\\", "/")
+        // 1) 建 旧stem → 新名 两张表
+        var _json_by_stem = ds_map_create()
+        var _bin_by_stem = ds_map_create()
+        for (var i = 0; i < array_length(_map); i++) {
+            var _old = string(_map[i][0])
+            var _new = string(_map[i][1])
+            var _ext = string_lower(string_replace_all(filename_ext(_old), ".", ""))
+            if (_ext == "") continue
+            // 去扩展名取 stem（不能用 string_replace，文件名里可能本来就有点）
+            var _stem = string_copy(_old, 1, string_length(_old) - string_length(_ext) - 1)
+            if (_ext == "json") {
+                _json_by_stem[? _stem] = _new
+            } else if (_ext == "bin") {
+                _bin_by_stem[? _stem] = _new
+            }
+        }
+        // 2) stem 同名者成对 → bin 复制成 json 的新 stem + .bin
+        var _paired = 0
+        var _keys = ds_map_keys_to_array(_bin_by_stem)
+        for (var i = 0; i < array_length(_keys); i++) {
+            var _stem = _keys[i]
+            if (!ds_map_exists(_json_by_stem, _stem)) continue
+            var _bin_new = _bin_by_stem[? _stem]
+            var _want = string_replace(string(_json_by_stem[? _stem]), ".json", "") + ".bin"
+            if (_bin_new == _want) {
+                _paired++
+                continue
+            }
+            var _src_p = _root2 + "/" + _bin_new
+            if (!file_exists(_src_p)) continue
+            var _dst_p = _root2 + "/" + _want
+            if (file_exists(_dst_p)) {
+                file_delete(_dst_p)
+            }
+            if (!file_copy(_src_p, _dst_p)) continue
+            file_delete(_src_p)
+            // 同步 _map，保证后续引用改写不会指向已删除的旧名
+            for (var j = 0; j < array_length(_map); j++) {
+                if (string(_map[j][1]) == _bin_new) {
+                    _map[j][1] = _want
+                    break
+                }
+            }
+            _paired++
+        }
+        ds_map_destroy(_json_by_stem)
+        ds_map_destroy(_bin_by_stem)
+        return _paired
+    }
+
     /// @param {String} _title
     /// @returns {Bool}
     /// 以「确实解出了关卡 json」为准：仅目录存在不代表解压成功（解压前会先建目录）。
@@ -525,6 +711,14 @@ function MapDownloadManager() constructor {
         var _root2 = string_replace_all(string(_root), "\\", "/")
         var _dir2 = string_replace_all(string(_dir), "\\", "/")
         if (!directory_exists(_dir2)) {
+            return 0
+        }
+        // mod/ 子树整棵跳过（2026-09-21）：作者随地图包发下来的卡/武器必须保持
+        // **原文件名与目录结构**（卡名 = json 文件名；.bin 要与 .json 同 stem；
+        // 贴图名编译在 json/bin 里）。这里只负责"别动它"，搬家交给 src_mod_install_tree。
+        // 顺带避免它的 .json 被关卡列表当成关卡扫出来。
+        var _rel = string_replace(_dir2, _root2, "")
+        if ((_rel == "/mod") or (string_pos("/mod/", _rel) == 1)) {
             return 0
         }
         var _item = file_find_first(_dir2 + "/*", fa_directory | fa_archive | fa_readonly)
@@ -547,9 +741,25 @@ function MapDownloadManager() constructor {
             var _old = _files[i]
             // filename_ext 带前导点（".png"），先去点，否则会拼出 "map_file_0..png"
             var _ext = string_lower(string_replace_all(filename_ext(_old), ".", ""))
-            var _new = "map_file_" + string(array_length(_map))
-            if (_ext != "") {
-                _new += "." + _ext
+            // ---- 与 zip_rewrite_names_ascii 同一规则（2026-09-21）----
+            // 只有 json / bin（归属追踪与 bin-json 配对）和**非 ASCII 名**才改名；
+            // 其余 ASCII 资源名**原样保留**。
+            // 否则 .bin 字节码里编译进去的文件名会与磁盘上的新名失配，
+            // 地图脚本 VM_LoadSprite("s_spr_xxx.png") 就加载不到自定义贴图。
+            var _ascii_ok = true
+            var _ol = string_length(_old)
+            for (var _ci = 1; _ci <= _ol; _ci++) {
+                if (ord(string_char_at(_old, _ci)) >= 128) {
+                    _ascii_ok = false
+                    break
+                }
+            }
+            var _new = _old
+            if (!_ascii_ok or _ext == "json" or _ext == "bin") {
+                _new = "map_file_" + string(array_length(_map))
+                if (_ext != "") {
+                    _new += "." + _ext
+                }
             }
             var _guard = 0
             while (file_exists(_root2 + "/" + _new) && _guard < 100) {
@@ -850,9 +1060,14 @@ function MapDownloadManager() constructor {
         global.unzip_diag += " | 名字非UTF8=" + string(_bad_name) + " 重写条目=" + string(_rewritten)
         if (_rewritten > 0) {
             var _code_a = native_unzip_map_file(_ascii_zip, _root)
+            // 作者随地图包带的 mod/ 子树：立刻搬出实验室树（留着会被关卡列表当关卡扫到）
+            var _mods_a = src_mod_install_tree(_root)
             if (file_exists(_ascii_zip)) {
                 file_delete(_ascii_zip)
             }
+            // 地图脚本 .bin 与 json 重新配对（见 pair_script_bins 注释）
+            var _paired_a = self.pair_script_bins(_root, _map)
+            global.unzip_diag += " | 脚本配对=" + string(_paired_a)
             var _jsons_a = []
             var _it = file_find_first(_root + "/" + _prefix + "_file_*.json", fa_archive | fa_readonly)
             while (_it != "") {
@@ -876,6 +1091,8 @@ function MapDownloadManager() constructor {
         }
         // ── 路径 B（回退）：解压到 download/<dir>/ → 平铺改名 → 提升 json 到根级
         var _code = native_unzip_map_file(_zip, _dest)
+        // 作者随地图包带的 mod/ 子树：同上，路径 B 解压在 _dest 下
+        var _mods_b = src_mod_install_tree(_dest)
         if (!directory_exists(_dest)) {
             global.unzip_diag += " | 解压后目标目录不存在";
             return (_code != 0) ? _code : -1
@@ -883,6 +1100,24 @@ function MapDownloadManager() constructor {
         // 解压结果：平铺 + ASCII 改名（旧名→新名映射），随后改写 json 内引用
         _map = []
         var _moved = self.ascii_flatten(_dest, _dest, _map)
+        // 地图脚本 .bin 与 json 重新配对（见 pair_script_bins 注释）。
+        // 路径 B 的 bin 已在 _dest 里平铺，配对后仍留在 _dest，随后由 promote 阶段一并提升。
+        var _paired_b = self.pair_script_bins(_dest, _map)
+        var _bin_flat = 0
+        // 把已配好对的 bin 也提升到实验室根级（json 会被 promote 提升，bin 必须一起，
+        // 否则 StageDetail 的 .bin 查找落空）。
+        // ⚠️ 命名必须与 promote_jsons_to_root 一致：它写的是 ascii_dir_name(标题) + "_" + 原basename，
+        //    所以这里也要加同样的前缀，才能与 json 同 stem。
+        var _promote_prefix = self.ascii_dir_name(_title) + "_"
+        var _bf = file_find_first(_dest + "/*.bin", fa_archive | fa_readonly)
+        while (_bf != "") {
+            var _dst_b = _root + "/" + _promote_prefix + _bf
+            if (file_exists(_dst_b)) file_delete(_dst_b)
+            if (file_copy(_dest + "/" + _bf, _dst_b)) _bin_flat++
+            _bf = file_find_next()
+        }
+        file_find_close()
+        global.unzip_diag += " | 脚本配对=" + string(_paired_b) + " bin提升=" + string(_bin_flat)
         var _jsons = self.file_util.find_files_with_extension_recursively(_dest, ".json")
         for (var j = 0; j < array_length(_jsons); j++) {
             self.patch_stage_json(_jsons[j], _map)

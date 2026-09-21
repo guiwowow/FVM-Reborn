@@ -1,0 +1,13 @@
+{
+  "$GMScript":"v1",
+  "%Name":"src_mod",
+  "isCompatibility":false,
+  "isDnD":false,
+  "name":"src_mod",
+  "parent":{
+    "name":"shell",
+    "path":"folders/脚本/shell.yy",
+  },
+  "resourceType":"GMScript",
+  "resourceVersion":"2.0",
+}

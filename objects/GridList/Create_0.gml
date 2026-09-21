@@ -3,13 +3,13 @@ self.state = {
     items: [],
     scroll_y: 0,
     scroll_target_y: 0,
-    scroll_lerp: 0.2,
+    scroll_lerp: 0.45,
     item_spacing: 4,
     viewport_left: 0,
     viewport_top: 0,
     viewport_width: 0,
     viewport_height: 0,
-    wheel_step: 10,
+    wheel_step: 26,
     second_touch_y_prev: 0,
     second_touch_active: false,
     two_finger_scale: 1.5,
@@ -139,7 +139,7 @@ function smooth_scroll_y() {
     clamp_scroll_bounds()
     var _k = self.state.scroll_lerp
     self.state.scroll_y = lerp(self.state.scroll_y, self.state.scroll_target_y, _k)
-    if (abs(self.state.scroll_y - self.state.scroll_target_y) < 0.35) {
+    if (abs(self.state.scroll_y - self.state.scroll_target_y) < 0.1) {
         self.state.scroll_y = self.state.scroll_target_y
     }
 }

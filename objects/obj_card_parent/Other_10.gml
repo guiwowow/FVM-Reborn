@@ -10,9 +10,25 @@ if (plant_data != undefined) {
 	
 	var card_save_data = get_card_info(plant_id)
 	if card_save_data != false{
-		current_level = card_save_data.level
-		skill = card_save_data.skill
-		shape = card_save_data.shape
+		// ---- VM 上限（地图脚本用 VM_SetCardLevelCap / 形态上限 / 技能上限 指定）----
+		// 每一项的 -1 都表示「脚本没限制」→ 走原逻辑取存档值。无脚本时全部 -1，行为不变。
+		if (global._VM_card_level_cap >= 0 && card_save_data.level > global._VM_card_level_cap) {
+			current_level = global._VM_card_level_cap;
+		} else {
+			current_level = card_save_data.level;
+		}
+
+		if (global._VM_card_shape_cap >= 0 && card_save_data.shape > global._VM_card_shape_cap) {
+			shape = global._VM_card_shape_cap;
+		} else {
+			shape = card_save_data.shape;
+		}
+
+		if (global._VM_card_skill_cap >= 0 && card_save_data.skill > global._VM_card_skill_cap) {
+			skill = global._VM_card_skill_cap;
+		} else {
+			skill = card_save_data.skill;
+		}
 	}
     
     // 应用基础属性

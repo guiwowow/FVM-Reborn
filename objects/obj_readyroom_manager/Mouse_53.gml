@@ -6,9 +6,21 @@ if (current_time - last_card_click_time < 150) {
 last_card_click_time = current_time
 
 if hover_card_index != -1 && !is_submenu_open{
-	if deck_slot_first_empty() != -1{
-		// 去重：卡已在卡组内则忽略（Draw_0 已选中卡片会置灰，但同一帧内的重复事件在置灰前还会再 add）
+	// VM 卡槽上限：地图脚本用 VM_SetMaxSlots() 指定本局卡槽数，可以比存档解锁数更低。
+	// 无脚本时 _VM_max_slots = -1 → _max_slot 就是存档解锁数，行为不变。
+	var _max_slot = global.save_data.unlocked_items.max_slot;
+	if (global._VM_max_slots >= 0 && global._VM_max_slots < _max_slot) {
+		_max_slot = global._VM_max_slots;
+	}
+	if deck_slot_count() < _max_slot && deck_slot_first_empty() != -1{
 		var card_id = global.player_deck[| hover_card_index*2];
+		// VM 禁卡：地图脚本用 VM_BanCard() 禁掉的卡不允许进卡组，并给出提示。
+		// global.banned_cards_online 在 scr_command_VM 顶层创建，无脚本时恒为空 map。
+		if !is_undefined(global.banned_cards_online[? card_id]){
+			show_notice("该关卡暂不支持此卡片使用", 60)
+			return;
+		}
+		// 去重：卡已在卡组内则忽略（Draw_0 已选中卡片会置灰，但同一帧内的重复事件在置灰前还会再 add）
 		var _dup = false
 		for (var i = 0; i < ds_list_size(global.selected_deck); i++) {
 			if global.selected_deck[| i][? "card_id"] == card_id {

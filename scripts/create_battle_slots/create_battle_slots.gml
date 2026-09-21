@@ -5,7 +5,13 @@ function create_battle_slots() {
     var y_pos = 90;
     var x_spacing = 90;
 	var y_spacing = 118;
-    
+
+    // VM 传送带模式：地图脚本用 VM_conveyor_belt_able(true) 开启后，
+    // 卡槽由 obj_flame_manager 固定画 15 格、卡片由脚本供应，不走玩家卡组。
+    if (global._VM_conveyor_belt) {
+        exit;
+    }
+
     var n = 0;
     var max_slot = deck_slot_max();
     for(var i = 0; i < max_slot; i++) {

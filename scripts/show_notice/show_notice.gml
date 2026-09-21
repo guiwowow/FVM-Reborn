@@ -1,129 +1,223 @@
+// =====================================================================
+// 全局报错接管：把 GameMaker 原生报错框换成我们自己的弹窗
+// =====================================================================
+// 用户要求：好看些、能直接复制报错内容、**且信息不能比原生窗少**。
+//
+// 可行性已在 runtime 里验证：
+//   · libyoyo.so 确实导出 exception_unhandled_handler
+//   · 原生窗的字符串组装片段是 "…not set before reading it." + "stacktrace" + "at %s"，
+//     说明异常结构体里带 longMessage / message / script / line / stacktrace 五个字段。
+//   这里把五个**全部**取出拼进弹窗，所以内容与原生窗等价，不是简化版。
+//
+// 复制通道：show_error_dialog 的 [导出错误报告] 会把 global.error_dialog.full
+//   （正文 + 版本 + 平台 + 时间）整份放进剪贴板 —— 屏幕上只显示前 900 字，但复制到的是全文。
+//
+// return true = 已处理 → 不再弹原生灰窗。
+// 任何一步取不到信息都会退化，最差情况显示 string(_e)，绝不吞错、绝不少信息。
+//
+// 注：这段是**脚本顶层代码**，游戏启动时执行一次，早于所有房间的 Create，
+//     所以能接住 obj_game_init 阶段的崩溃（那正是之前踩到的那次）。
+// =====================================================================
+try {
+    exception_unhandled_handler(function(_e) {
+        try {
+            var _txt = "";
+            if is_struct(_e) {
+                // ① 主消息：优先 longMessage（原生窗显示的就是它），退到 message
+                if (variable_struct_exists(_e, "longMessage")) _txt = string(_e[$ "longMessage"]);
+                if (string_length(_txt) <= 0 && variable_struct_exists(_e, "message")) {
+                    _txt = string(_e[$ "message"]);
+                }
+                // ② 出错的脚本名与行号（原生窗 "at gml_Script_xxx" / "(line N)" 那两行）
+                if (variable_struct_exists(_e, "script") && string(_e[$ "script"]) != "") {
+                    _txt += "\nat " + string(_e[$ "script"]);
+                }
+                if (variable_struct_exists(_e, "line")) {
+                    _txt += " (line " + string(_e[$ "line"]) + ")";
+                }
+                // ③ 调用栈（原生窗底部那串 gml_Script_xxx / gml_Object_xxx）
+                if (variable_struct_exists(_e, "stacktrace")) {
+                    var _st = _e[$ "stacktrace"];
+                    var _s = "";
+                    if (is_array(_st)) {
+                        for (var _i = 0; _i < array_length(_st); _i++) {
+                            var _fr = _st[_i];
+                            if (is_struct(_fr)) {
+                                _s += "\n  " + string(_fr[$ "script"]) + " (line " + string(_fr[$ "line"]) + ")";
+                            } else {
+                                _s += "\n  " + string(_fr);
+                            }
+                        }
+                    } else if (!is_undefined(_st)) {
+                        _s = string(_st);
+                    }
+                    if (string_length(_s) > 0) {
+                        _txt += "\n\n调用栈：" + _s;
+                    }
+                }
+            }
+            if (string_length(_txt) <= 0) {
+                _txt = string(_e);      // 结构体形态不符 → 至少把原样倒出来
+            }
+
+            // 同时落一份文件：弹窗只能截图，文件能整份取出（多次报错追加）
+            try {
+                var _f = file_text_open_append("error_log.txt");
+                if (_f >= 0) {
+                    file_text_write_string(_f, _txt);
+                    file_text_writeln(_f);
+                    file_text_close(_f);
+                }
+            } catch (_e_file) {
+                // 写文件失败不影响弹窗
+            }
+
+            show_error_dialog("游戏出错", _txt);
+            return true;
+        } catch (_e_inner) {
+            return false;   // 拼装失败 → 交回原生窗，至少不吞错
+        }
+    });
+} catch (_e_install) {
+    // 该 runtime 没有 exception_unhandled_handler → 维持原生弹窗，不报错
+}
+
 /// @function show_notice(notice_text,life)
-/// @description 在屏幕上显示通知
+// ---- 通知（toast）的样式与动画参数（想改观感只动这几个数字）----
+// 白底黑字 + 从屏幕顶端滑入 → 停留 → **原路滑回**消失。
+// 配色与下方报错弹窗完全一致（同一套 UI 语言）。
+#macro NOTICE_SLIDE_IN   12    // 滑入帧数（≈0.2s）
+#macro NOTICE_SLIDE_OUT  14    // 滑回帧数（原路返回，≈0.23s）
+#macro NOTICE_REST_RATIO 0.07  // 停留时面板顶边距屏幕顶部的高度比例
+#macro NOTICE_PAD_X      36    // 面板左右内边距
+#macro NOTICE_PAD_Y      18    // 面板上下内边距
+#macro NOTICE_RADIUS     14    // 圆角半径。必须显式给值 —— draw_roundrect 的默认半径
+                               // 在低分辨率下弧只有几段，圆角看着像「缺了几块」
+#macro NOTICE_GAP        12    // 多条通知同时在屏时的间距
+
+/// @description 在屏幕上显示通知（toast）
 /// @param {string} notice_text 通知文本
-/// @param {real} life 通知存在的时间
+/// @param {real} life 停留帧数（不含滑入滑出）
 function show_notice(notice_text, life) {
-    // 创建通知数据结构
     var notice = {
         text: notice_text,
         life: life,
-        total_life: life,
-        frames: 0,
-        alpha: 0,
-        scale: 1.2,
-        pos_x: room_width / 2,
-        pos_y: room_height / 3,
-        target_y: camera_get_view_y(view_camera[0]) + camera_get_view_height(view_camera[0]) / 3
+        frames: 0
     };
-    
-    // 如果没有全局通知列表，则创建一个
     if (!variable_global_exists("notice_list")) {
         global.notice_list = [];
     }
-    
-    // 将新通知添加到列表
     array_push(global.notice_list, notice);
 }
 
-// 在某个控制对象的步事件中更新所有通知
+/// @description 驱动通知生命周期（由 obj_notice_controller 的 Step 调用）
+/// 位置与动画进度在 draw_notices 里按 frames 推算，这里只负责推进与回收。
 function update_notices() {
     if (!variable_global_exists("notice_list")) return;
-    
-    var camera_x = camera_get_view_x(view_camera[0]);
-    var camera_y = camera_get_view_y(view_camera[0]);
-    var camera_w = camera_get_view_width(view_camera[0]);
-    var camera_h = camera_get_view_height(view_camera[0]);
-    
+    var _span = NOTICE_SLIDE_IN + NOTICE_SLIDE_OUT;
     for (var i = array_length(global.notice_list) - 1; i >= 0; i--) {
         var notice = global.notice_list[i];
         notice.frames++;
-        
-        // 更新位置以确保通知保持在屏幕中心偏上
-        notice.pos_x = room_width / 2;
-        //notice.target_y = camera_y + camera_h / 3;
-        //notice.pos_y = notice.target_y;
-        
-        // 前20帧：淡入和缩放效果
-        if (notice.frames <= 10) {
-            notice.alpha = notice.frames / 10;
-            notice.scale = 2.2 - (0.2 * (notice.frames / 10));
+        if (notice.frames > notice.life + _span) {
+            array_delete(global.notice_list, i, 1);
+            continue;
         }
-        // 生命周期结束前的阶段
-        else if (notice.frames > notice.life) {
-            // 向上移动并淡出
-            notice.pos_y -= 2;
-            notice.alpha = 1 - ((notice.frames - notice.life) / 20);
-            
-            // 当完全透明时移除通知
-            if (notice.alpha <= 0) {
-                array_delete(global.notice_list, i, 1);
-                continue;
-            }
-        }
-        
         global.notice_list[i] = notice;
     }
 }
 
-// 在绘制事件中绘制所有通知
+/// @description 绘制所有通知（由 obj_notice_controller 的 Draw 调用）
 function draw_notices() {
     if (!variable_global_exists("notice_list")) return;
-    
+
+    draw_set_font(font_yuan);
+    var _cx      = room_width * 0.5;
+    var _maxw    = min(room_width * 0.62, 1120);
+    var _rest    = room_height * NOTICE_REST_RATIO;
+    var _stack_y = _rest;
+
     for (var i = 0; i < array_length(global.notice_list); i++) {
         var notice = global.notice_list[i];
-        
-        // 设置字体和颜色
-        var text = notice.text;
-        var pos_x = notice.pos_x;
-        var pos_y = notice.pos_y;
-        var alpha = notice.alpha;
-        var scale = notice.scale;
-        
-		draw_set_font(font_yuan);
-		
-        // 计算文本尺寸
-        var text_width = string_width(text) * scale;
-        var text_height = string_height(text) * scale;
-        
-        // 绘制半透明黑色背景框
-        var padding = 5 * scale;
-        draw_set_alpha(0.7 * alpha);
+        var _text  = notice.text;
+        var _scale = 1.0;
+        // VM 覆盖：地图脚本用 VM_ShowNotice* 指定过缩放时用脚本值（用后即清）。
+        if (variable_global_exists("_VM_notice_scale") && global._VM_notice_scale != -1) {
+            _scale = global._VM_notice_scale;
+            global._VM_notice_scale = -1;
+        }
+        if (_scale <= 0) _scale = 1.0;
+
+        // 单行测量（2026-09-21 修「文字不在框中间」）：
+        // 原来用 string_height_ext(_text, 90, ...) + draw_text_ext_transformed(..., 90, ...)，
+        // 那个 90 是**换行后的行距**，而 font_yuan 行高只有 27px。文本一旦被测成两行，
+        // 框高就变成 ~117px，可真正画出来的只有一行且贴着框顶 → 看着就是「文字跑到框上方」。
+        // 提示文案本来就是短句，改成单行测量 + 超宽自动缩放，从根上消掉这个变量。
+        var _tw = string_width(_text) * _scale;
+        if (_tw > _maxw) {
+            _scale *= _maxw / _tw;
+            _tw = _maxw;
+        }
+        var _th = string_height(_text) * _scale;
+        var _pw = _tw + NOTICE_PAD_X * 2;
+        var _ph = _th + NOTICE_PAD_Y * 2;
+
+        // 动画进度 _t：0 = 完全在屏幕顶部之外，1 = 落位
+        var _t;
+        if (notice.frames <= NOTICE_SLIDE_IN) {
+            _t = notice.frames / NOTICE_SLIDE_IN;          // 滑入：线性（2026-09-21 按用户要求从 ease-out 改回）
+        } else if (notice.frames <= NOTICE_SLIDE_IN + notice.life) {
+            _t = 1;                                        // 停留
+        } else {
+            _t = 1 - (notice.frames - NOTICE_SLIDE_IN - notice.life) / NOTICE_SLIDE_OUT;   // 原路滑回
+        }
+        _t = clamp(_t, 0, 1);
+        // 未落位时整体抬到屏幕上方：面板高 + 停留位 + 余量
+        var _off = -(1 - _t) * (_ph + _rest + 40);
+
+        var _x1 = _cx - _pw * 0.5;
+        var _y1 = _stack_y + _off;
+        var _x2 = _x1 + _pw;
+        var _y2 = _y1 + _ph;
+
+        // 面板：白底 + 黑色边框 + 底部阴影（2026-09-21 按用户要求改）
+        // 用 draw_roundrect_ext 显式给半径：默认半径在低分辨率下弧只有几段，
+        // 圆角看起来像「缺了几块」；半径变大后弧的段数随之增加，圆角才顺。
+        var _rad = NOTICE_RADIUS;
+        // ① 底部阴影：整体右下偏移的半透明黑圆角块，先画 → 被面板盖住上半，只在下方/右侧露出
+        draw_set_alpha(0.30);
         draw_set_color(c_black);
-        draw_roundrect(
-            pos_x - text_width/2 - padding,
-            pos_y - text_height*scale + padding,
-            pos_x + text_width/2 + padding,
-            pos_y - text_height + padding*2,
-            false // 不绘制轮廓
-        );
-        
-        // 绘制白色描边
-        draw_set_alpha(alpha);
-        draw_set_color(c_white);
-        //draw_set_line_width(2 * scale);
-        draw_roundrect(
-            pos_x - text_width/2 - padding,
-            pos_y - text_height*scale + padding,
-            pos_x + text_width/2 + padding,
-            pos_y - text_height + padding*2,
-            true // 绘制轮廓
-        );
-        
-        // 绘制绿色文本
-        draw_set_color(make_color_rgb(0, 255, 0)); // 绿色
-        draw_set_font(font_yuan);
+        draw_roundrect_ext(_x1 + 3, _y1 + 5, _x2 + 3, _y2 + 5, _rad, _rad, false);
+        // ② 面板本体：白底
+        draw_set_alpha(1);
+        draw_set_color(make_color_rgb(246, 246, 248));
+        draw_roundrect_ext(_x1, _y1, _x2, _y2, _rad, _rad, false);
+        // ③ 黑色边框 2px：外描一圈 + 内缩 1px 再描一圈
+        draw_set_color(c_black);
+        draw_roundrect_ext(_x1, _y1, _x2, _y2, _rad, _rad, true);
+        draw_roundrect_ext(_x1 + 1, _y1 + 1, _x2 - 1, _y2 - 1, _rad - 1, _rad - 1, true);
+
+        // 文字：默认黑字；地图脚本可覆盖颜色（VM_ShowNoticeColor）
+        var _tc = make_color_rgb(28, 28, 38);
+        if (variable_global_exists("_VM_notice_color_r") && global._VM_notice_color_r != -1) {
+            _tc = make_color_rgb(
+                min(max(0, global._VM_notice_color_r), 255),
+                min(max(0, global._VM_notice_color_g), 255),
+                min(max(0, global._VM_notice_color_b), 255));
+            global._VM_notice_color_r = -1;
+        }
+        draw_set_color(_tc);
         draw_set_halign(fa_center);
         draw_set_valign(fa_middle);
-        draw_set_alpha(alpha);
-        draw_text_ext_transformed(
-            pos_x, pos_y-3, text,90,1920,scale,scale,0
-        );
-        
-        // 重置绘制设置
-        draw_set_alpha(1);
-        draw_set_color(c_white);
-        //draw_set_line_width(1);
+        draw_text_transformed(_cx, (_y1 + _y2) * 0.5, _text, _scale, _scale, 0);
+
+        _stack_y += _ph + NOTICE_GAP;
     }
+
+    // 复位绘制状态
+    draw_set_alpha(1);
+    draw_set_color(c_white);
+    draw_set_halign(fa_left);
+    draw_set_valign(fa_top);
 }
 
 // =====================================================================

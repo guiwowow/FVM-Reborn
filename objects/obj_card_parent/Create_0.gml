@@ -60,3 +60,6 @@ current_level = 0  // 当前等级
 // 于是缓时期间 slowmo_gate() 可以在非逻辑帧单独推进它，让动画比 1/12 的玩法更流畅。
 // ⚠️ 新增这个标志前必须先逐行确认 timer 没有兼任玩法用途（见 scripts/slowmo_gate/slowmo_gate.gml 文件头）。
 slowmo_anim_timer = true
+
+// 受伤 VM 挂载点用：记录上一帧血量，用于检测「本帧掉血」
+pre_hp=-1

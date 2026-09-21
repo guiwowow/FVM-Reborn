@@ -38,3 +38,6 @@ awake_buff_timer = 0
 // ⚠️ 注意：本对象 Create 里**没有** event_inherited，不会从 obj_card_parent 继承这个标志，
 //    所以必须在这里显式写一遍。
 slowmo_anim_timer = true
+
+// 受伤 VM 挂载点：记录上一帧血量
+pre_hp = -1

@@ -5,8 +5,28 @@ if global.is_paused{
 	exit
 }
 
+// ---- VM 地图脚本：战斗开始事件块（从联机版移植）----------------------
+// 只在有 .bin 且该脚本写了 _VM_BATTLE_START 块时才有 buffer；
+// 内置关卡没有 .bin → buffer_exists 为假 → 零开销。
+// _VM_battle_start_done 保证整个房间只跑一次。
+// -------------------------------------------------------------------
+if (!global._VM_battle_start_done) {
+	// 上游只在「存在 _VM_BATTLE_START 块」时才置 done —— 那样一来，只写了
+	// _VM_WAVE_* 而没写 BATTLE_START 的脚本，波次钩子会永远不触发。
+	// 这里改成无论如何都置 done：BATTLE_START 有就跑，没有就只置标志。
+	if (buffer_exists(global._VM_BATTLE_START)) {
+		vm_trace("执行 _VM_BATTLE_START")
+		VM_Execute(global.__vm, global._VM_BATTLE_START, "_VM_BATTLE_START");
+		vm_trace("_VM_BATTLE_START 返回")
+		global._VM_prev_wave    = -1;
+		global._VM_prev_subwave = -1;
+	}
+	global._VM_battle_start_done = true;
+}
+
 event_timer ++
-{//（旧代码）硬编码的事件和地图物件
+// _VM_event_enabled 由脚本 VM_SetEventEnabled() 控制：地图脚本可以关掉原版硬编码事件。
+if(global._VM_event_enabled){//（旧代码）硬编码的事件和地图物件
 	if global.level_data.name == "布丁岛（日）" || global.level_data.name == "布丁岛（夜）"{
 		if event_timer mod 1800 == 5{
 			//(测试)生成老鼠洞
@@ -1164,3 +1184,11 @@ if is_real(global.level_file.version){
 		}
 	}
 }
+
+// ---- VM 地图脚本：统一冲刷本帧排队的事件钩子（从联机版移植）----------
+// 队列由 VM_QueueHook 填充（card_created / card_destroyed /
+// src_hook_function 的敌人生成·击杀 / obj_platform 的平台空闲），
+// 这里统一交给 VM 执行，保证钩子在同一帧的确定时机跑。
+// 单机不需要联机版的 VM_HandleNotify 下发路径。
+// -------------------------------------------------------------------
+VM_FlushHooks();

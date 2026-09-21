@@ -136,8 +136,20 @@ function LaboratoryManager() constructor {
     static load_all_stages = function() {
         var error_message = ""
         var _json_path_list = self.file_util.find_files_with_extension_recursively(kCustomStageFolder, ".json")
+        // 诊断（2026-09-21）：把扫描结果留一份，"下载完不显示在地图列表"这类问题
+        // 必须能区分「根本没扫到 json」和「扫到了但解析失败」——两者修法完全不同。
+        global._lab_scan_json_paths = _json_path_list
+        vm_trace("[load_all_stages] 扫到 json=" + string(array_length(_json_path_list)))
+        for (var _sdi = 0; _sdi < array_length(_json_path_list); _sdi++) {
+            vm_trace("   " + string(_json_path_list[_sdi]))
+        }
         for (var i = 0; i < array_length(_json_path_list); i++) {
             var _json_path = _json_path_list[i]
+            // 跳过联机地图缓存目录（laboratory/cache/），其中的 json 是地图元数据而非关卡定义
+            // （对齐联机版 origin/main 的同名改动）
+            if (string_pos("/" + kCustomStageFolder + "/cache/", "/" + string_replace_all(string(_json_path), "\\", "/")) > 0) {
+                continue
+            }
             var _result = self._load_stage(_json_path)
             if (_result.is_failed()) {
                 error_message += _result.get_error_stack()

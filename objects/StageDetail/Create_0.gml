@@ -78,6 +78,67 @@ function on_create_room() {
     global.level_data = _level_data
     global.level_id = self.state.custom_stage.id
     global.level_file = _parse_result.data
+
+    // ---- 地图脚本 VM 初始化（2026-09-20 从联机版移植）----------------------
+    // 实验室地图可以带一个**同名 .bin** —— 地图作者用 LabMapCompiler.exe 把
+    // 中文脚本（_VM_WAVE_START / VM_SpawnEnemy 等）编译成字节码，随地图包分发。
+    // 这里载入它交给 VM 解释器；没有 .bin 时以「无脚本」初始化，
+    // 行为与移植前完全一致（内置关卡都没有 .bin）。
+    // 详见 scripts/scr_command_VM/scr_command_VM.gml。
+    //
+    // _file_cache_json_path 是 VM 查找地图自定义贴图/音效的基准目录
+    // （VM_LoadSprite 会去「与 json 同级」的目录找），必须在这里设置。
+    // ---------------------------------------------------------------------
+    var _json_dir = self.state.custom_stage.json_path
+    global._file_cache_json_path = _json_dir
+    var _bin_path = string_replace(_json_dir, ".json", ".bin");
+    // ---- 兜底：按**同前缀**找脚本 ----
+    // 下载时条目名被按顺序改成 "<prefix>_file_N.ext"，所以 bin 与 json 的 N 本来**不相干**。
+    // 新版下载会用 pair_script_bins 把同 stem 的 bin 改成与 json 一致；
+    // 但**用旧版下载的地图**没做过这一步，按 json 名直接改名就找不到脚本
+    //（症状：地图能进、但脚本完全不生效）。
+    // 这里按前缀（= 该地图专属，跨地图不会撞）再找一次 bin。
+    if (!file_exists(_bin_path)) {
+        var _de = string_last_pos("/", _json_dir);
+        if (_de > 0) {
+            var _folder = string_copy(_json_dir, 1, _de);
+            var _fname  = string_copy(_json_dir, _de + 1, string_length(_json_dir) - _de);
+            var _fi = string_last_pos("_file_", _fname);
+            if (_fi > 0) {
+                var _pfx = string_copy(_fname, 1, _fi - 1);
+                var _bit = file_find_first(_folder + _pfx + "_file_*.bin", fa_archive | fa_readonly);
+                if (_bit != "") {
+                    _bin_path = _folder + _bit;
+                    vm_trace("bin 兜底命中（旧版下载未配对）: " + string(_bin_path))
+                }
+                file_find_close();
+            }
+        }
+    }
+    // VM 随机种子：每次进房重掷，保证同一张图每局 VM_Random 序列不同
+    global.__vm.rng_state = irandom(2147483646) + 1;
+
+    // 面包屑：这一整段（尤其 buffer_load + VM_InitRoomEntry）是最可能原生崩溃的地方
+    vm_trace_begin("StageDetail.on_create_room")
+    vm_trace("json=" + string(_json_dir))
+    vm_trace("bin=" + string(_bin_path) + " 存在=" + string(file_exists(_bin_path)))
+    global._vm_bin_path = _bin_path
+    if (file_exists(_bin_path)) {
+        var _bb = buffer_load(_bin_path);
+        vm_trace("buffer=" + string(_bb) + " size=" + string(_bb >= 0 ? buffer_get_size(_bb) : -1))
+        vm_trace("VM_InitRoomEntry 开始（脚本块解析+CONST_INIT+ROOM_READY）")
+        VM_InitRoomEntry(_bb);
+        vm_trace("VM_InitRoomEntry 返回")
+    } else {
+        VM_InitRoomEntry(undefined);
+        vm_trace("无 bin，已按无脚本初始化")
+    }
+    // ⚠️ 这里**不能**写 vm_trace_end()：进图崩溃多数发生在之后的战斗房间
+    //    （obj_battle/Create、BATTLE_START、首帧 VM_FRAME），
+    //    过早写 OK end 会让下次启动的检查误判"上次正常"而把追踪删掉
+    //    （2026-09-21 实测踩到：三界花园崩了重进没弹窗）。
+    //    成功标记统一放在 obj_battle/Step_0 跑满 120 帧那处。
+
     global.gui_stack.to(room_ready)
     window_set_cursor(cr_arrow)
 }

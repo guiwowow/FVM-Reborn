@@ -176,6 +176,10 @@ function on_step() {
                 if (!is_undefined(_s.on_click)) {
                     _s.mouse_status = MouseStatus.NONE
                     _s.prev_mouse_status = MouseStatus.NONE
+                    // VM Hook：按钮被点击（从联机版移植）。
+                    // 记录被点的按钮实例 id 供脚本用 VM_GetLastClickedButton 读取。
+                    global._VM_last_clicked_button = real(self.id);
+                    if (buffer_exists(global._VM_BUTTON_CLICKED)) VM_Execute(global.__vm, global._VM_BUTTON_CLICKED, "_VM_BUTTON_CLICKED");
                     window_set_cursor(cr_arrow)
                     _s.on_click()
                 }

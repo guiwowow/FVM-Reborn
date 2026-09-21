@@ -37,6 +37,9 @@ mouse_id = ""
 giant_type = false
 target_type = "normal"
 is_boss = false
+// VM 地图脚本用：BOSS 状态变化钩子（_VM_BOSS_STATE_CHANGE）需要知道上一个状态。
+// 从联机版移植（那边同样在 Create 里置 -1，由 obj_battle/Step_0 的敌人网格统计块更新）。
+pre_state = -1
 can_dropped = false
 
 // =======猫驱赶相关=======
@@ -64,3 +67,6 @@ water_effect_timer = 0
 hp_modified = false
 
 block_mouse_id_list = ["mouse_train_1"]
+
+// 受伤 VM 挂载点：记录上一帧血量
+pre_hp = -1

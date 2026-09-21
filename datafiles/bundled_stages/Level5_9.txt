@@ -1,0 +1,703 @@
+_VM_ROOM_READY_ENTRY {
+	VM_BanAllCard()							//禁用所有卡
+	VM_CannelBanCard("xiao_long_bao")
+	VM_CannelBanCard("small_fire")
+	VM_CannelBanCard("coke_bomb")
+	VM_CannelBanCard("toast_bread")
+	VM_CannelBanCard("mouse_clip")
+	VM_CannelBanCard("ice_long_bao")
+	VM_CannelBanCard("hamburger")
+	VM_CannelBanCard("double_long_bao")
+	VM_CannelBanCard("coffee_cup")
+	VM_CannelBanCard("goblet_lamp")
+	VM_CannelBanCard("coffee_pot")
+	VM_CannelBanCard("wooden_cork")
+	VM_CannelBanCard("ice_bucket_bomb")
+	VM_CannelBanCard("kettle_bomb")
+	VM_CannelBanCard("wooden_plate")
+	VM_CannelBanCard("flour_sack")
+	VM_CannelBanCard("triple_wine_rack")
+	VM_CannelBanCard("steel_wool")
+	VM_CannelBanCard("wine_bottle_bomb")
+	VM_CannelBanCard("fishbone")
+	VM_CannelBanCard("brazier")
+	VM_CannelBanCard("chocolate_bread")
+	VM_CannelBanCard("water_tea_cup")
+	VM_CannelBanCard("oil_lamp")
+	VM_CannelBanCard("sausage")
+	VM_CannelBanCard("ventilation_fan")
+	VM_CannelBanCard("double_water_pipe")
+	VM_CannelBanCard("coal_starfish")
+	VM_CannelBanCard("melon_shield")
+	VM_CannelBanCard("salad_pult")
+	VM_CannelBanCard("soda_bubble")
+	VM_CannelBanCard("chocolate_pult")
+	VM_CannelBanCard("coffee_grounds")
+	VM_CannelBanCard("cat_box")
+	VM_CannelBanCard("egg_boiler_pult")
+	VM_CannelBanCard("gatlin_long_bao")
+	VM_CannelBanCard("large_fire")
+	VM_CannelBanCard("rotating_coffee_pot")
+	VM_CannelBanCard("takoyaki")
+	VM_CannelBanCard("iron_fishbone")				// 解禁PvZ卡片
+	VM_SetCardLevelCap(0)							// 卡片等级上限设为 0
+	VM_SetCardShapeCap(0)							// 卡片转职上限设为 0
+	VM_SetCardSkillCap(0)							// 卡片技能上限设为 0
+    VM_SetMaxSlots(8)								// 玩家最多携带 8 张卡片
+	VM_BanWeapon()									// 禁用武器
+	VM_BanSuperWeapon()								// 禁用超级武器
+	VM_BanShield()									// 禁用副武器
+}
+
+
+_VM_BATTLE_START {
+	surprise_timer = -1
+	VM_SetTerrain(-1, -1, "obstacle")	 			 // 设置全图不可种植，但后续在1-5行种植气泡的区域可以种植
+	player_id = 1
+	VM_SetCardSlotProp("xiao_long_bao", "cooldown", 450)
+	VM_SetCardSlotProp("small_fire", "cooldown", 450)
+	VM_SetCardSlotProp("toast_bread", "cooldown", 1800)
+	VM_SetCardSlotProp("flour_sack", "cooldown", 1800)
+	VM_SetCardSlotProp("double_long_bao", "cooldown", 450)
+	VM_SetCardSlotProp("mouse_clip", "cooldown", 1800)
+	VM_SetCardSlotProp("coke_bomb", "cooldown", 3000)
+	VM_SetCardSlotProp("wooden_plate", "cooldown", 450)
+	VM_SetCardSlotProp("ice_long_bao", "cooldown", 450)
+	VM_SetCardSlotProp("goblet_lamp", "cooldown", 450)
+	VM_SetCardSlotProp("coffee_cup", "cooldown", 450)
+	VM_SetCardSlotProp("salad_pult", "cooldown", 450)
+	VM_SetCardSlotProp("coffee_pot", "cooldown", 450)
+	VM_SetCardSlotProp("chocolate_bread", "cooldown", 1800)
+	VM_SetCardSlotProp("water_tea_cup", "cooldown", 1800)
+	VM_SetCardSlotProp("ice_bucket_bomb", "cooldown", 3000)
+	VM_SetCardSlotProp("cat_box", "cooldown", 450)
+	VM_SetCardSlotProp("kettle_bomb", "cooldown", 3000)
+	VM_SetCardSlotProp("triple_wine_rack", "cooldown", 450)
+	VM_SetCardSlotProp("brazier", "cooldown", 450)
+	VM_SetCardSlotProp("large_fire", "cooldown", 3000)
+	VM_SetCardSlotProp("iron_fishbone", "cooldown", 3000)
+	VM_SetCardSlotProp("gatlin_long_bao", "cooldown", 3000)
+	VM_SetCardSlotProp("rotating_coffee_pot", "cooldown", 3000)
+	VM_SetCardSlotProp("wooden_cork", "cooldown", 450)
+	VM_SetCardSlotProp("coffee_grounds", "cooldown", 450)
+	VM_SetCardSlotProp("wine_bottle_bomb", "cooldown", 3000)
+	VM_SetCardSlotProp("double_water_pipe", "cooldown", 450)
+	VM_SetCardSlotProp("melon_shield", "cooldown", 1800)
+	VM_SetCardSlotProp("steel_wool", "cooldown", 1800)
+	VM_SetCardSlotProp("sausage", "cooldown", 450)
+	VM_SetCardSlotProp("fishbone", "cooldown", 450)
+	VM_SetCardSlotProp("hamburger", "cooldown", 450)
+	VM_SetCardSlotProp("oil_lamp", "cooldown", 1800)
+	VM_SetCardSlotProp("ventilation_fan", "cooldown", 450)
+	VM_SetCardSlotProp("egg_boiler_pult", "cooldown", 450)
+	VM_SetCardSlotProp("chocolate_pult", "cooldown", 450)
+	VM_SetCardSlotProp("soda_bubble", "cooldown", 450)
+	VM_SetCardSlotProp("coal_starfish", "cooldown", 450)
+	VM_SetCardSlotProp("small_fire", "cost", 50)
+	VM_SetCardSlotProp("coke_bomb", "cost", 150)
+	VM_SetCardSlotProp("goblet_lamp", "cost", 25)
+	VM_SetCardSlotProp("wooden_cork", "cost", 75)
+	VM_SetCardSlotProp("kettle_bomb", "cost", 125)
+	VM_SetCardSlotProp("wooden_plate", "cost", 25)
+	VM_SetCardSlotProp("flour_sack", "cost", 50)
+	VM_SetCardSlotProp("wine_bottle_bomb", "cost", 125)
+	VM_SetCardSlotProp("ventilation_fan", "cost", 100)
+	VM_SetCardSlotProp("coal_starfish", "cost", 125)
+	VM_SetCardSlotProp("soda_bubble", "cost", 25)
+	VM_SetCardSlotProp("chocolate_pult", "cost", 100)
+	VM_SetCardSlotProp("coffee_grounds", "cost", 75)
+	VM_SetCardSlotProp("cat_box", "cost", 50)
+	VM_SetCardSlotProp("egg_boiler_pult", "cost", 300)		// 卡片种植PvZ化
+}
+
+
+_VM_CARD_DESTROYED {
+    die_name =VM_GetKilledProp( "plant_id")        // 刚销毁的植物实例 名称
+    die_col=VM_GetKilledProp("grid_col")      	  // 刚销毁的植物实例 列
+    die_row=VM_GetKilledProp("grid_row")      	  // 刚销毁的植物实例 行
+	die_state=VM_GetKilledProp("state")
+    if(die_name =="soda_bubble"){
+        VM_SetTerrain(die_col, die_row, "obstacle" )
+    }
+}
+
+
+_VM_CARD_CREATED {
+	card_id = VM_GetLastCreatedCard()
+	card_type = VM_GetProp(card_id,"plant_id")
+	if(card_type=="player"){
+		row = VM_GetProp(card_id,"grid_row")
+		col = VM_GetProp(card_id,"grid_col")
+		VM_SwapPlants(col, row, player_id, -1)
+		if (col <= 2) {
+			VM_SpawnPlant("soda_bubble", col, row, 0, 0, 0)
+		}// 把角色移到场景外面
+		player_id =player_id +  1 
+		exit
+	}
+	
+    plant_id = VM_GetLastCreatedCard()                            // 获取刚种下的植物实例 ID	
+    name = VM_GetProp(plant_id, "plant_id")                       // 读取植物卡片名
+	set_col = VM_GetProp(plant_id, "grid_col")                    // 读取植物列数
+	set_row = VM_GetProp(plant_id, "grid_row")                    // 读取植物行数
+	set_cost = VM_GetProp(plant_id, "cost")                       // 读取植物耗火
+	
+	if (name != "soda_bubble"){                                   // 若不是放置气泡
+		lilypad = VM_GetPlantAt(set_col, set_row, "lilypad")      // 获取本格承载卡实例
+		if (lilypad == -1){                                       // 若承载卡没有卡片
+			VM_ClearPlants(set_col, set_row)                      // 清除本格卡片
+			VM_SetCardSlotProp(name, "cooldown_timer", 9999)      // 重置刚种下的植物冷却
+			had_flame = VM_GetFlame()                             // 获取现在的火苗数
+			VM_SetFlame(had_flame+ set_cost)                      // 返还火苗
+			VM_ShowNotice("请先放气泡")                            // 给予玩家提示	
+		}
+	}else{
+		if(set_row!=0){
+			if(set_row!=6){
+				VM_SetProp(plant_id,"plant_type" , "lilypad")
+				VM_SetTerrain(set_col, set_row, "normal" )		   // 1-5行的气泡会修改地形使其可以种植
+			}
+		}	
+	}
+	if (name == "fishbone"){                                       // 若种植鱼刺
+		lilypad = VM_GetPlantAt(set_col, set_row, "lilypad")
+		lilypad_id = VM_GetProp(lilypad, "plant_id")
+		if (lilypad != -1){
+			VM_ClearPlants(set_col, set_row)                      // 清除本格卡片
+			VM_SpawnPlant(lilypad_id, set_col, set_row, 0, 0, 0)
+			VM_SetCardSlotProp(name, "cooldown_timer", 9999)      // 重置刚种下的植物冷却
+			had_flame = VM_GetFlame()                             // 获取现在的火苗数
+			VM_SetFlame(had_flame+ set_cost)                      // 返还火苗
+			VM_ShowNotice("你不能把鱼刺放在那里")
+		}// 给予玩家提示	
+	}
+    if (name == "egg_boiler_pult") {
+        VM_SetProp(plant_id, "atk", 40)
+        VM_SetProp(plant_id, "attack_cycle", 162)
+    }
+	if(name=="salad_pult"){
+		VM_SetProp(plant_id, "atk",20)
+        VM_SetProp(plant_id, "attack_cycle", 162)
+	}
+	if(name=="chocolate_pult"){
+		VM_SetProp(plant_id, "atk",10)
+        VM_SetProp(plant_id, "attack_cycle", 162)
+	}
+	if(name=="rotating_coffee_pot"){
+		VM_SetProp(plant_id, "atk",40)
+		VM_SetProp(plant_id, "attack_cycle",111)
+		VM_SetCardSlotProp("rotating_coffee_pot", "vm_current_cost", 150)
+	}
+	if(name=="coal_starfish"){
+		VM_SetProp(plant_id, "atk",10)
+        VM_SetProp(plant_id, "attack_cycle", 78)
+	}
+	if(name=="xiao_long_bao"){
+		VM_SetProp(plant_id, "atk",10)
+        VM_SetProp(plant_id, "attack_cycle", 78)
+	}
+	if(name=="ice_long_bao"){
+		VM_SetProp(plant_id, "atk",10)
+        VM_SetProp(plant_id, "attack_cycle", 78)
+	}
+	if(name=="double_long_bao"){
+		VM_SetProp(plant_id, "atk",10)
+        VM_SetProp(plant_id, "attack_cycle", 78)
+	}
+	if(name=="gatlin_long_bao"){
+		VM_SetProp(plant_id, "atk",10)
+		VM_SetProp(plant_id, "attack_cycle", 78)
+		VM_SetCardSlotProp("gatlin_long_bao", "vm_current_cost", 250)
+	}
+	if(name=="sausage"){
+		VM_SetProp(plant_id, "atk",10)
+        VM_SetProp(plant_id, "attack_cycle", 78)
+	}
+	if(name=="coffee_cup"){
+		VM_SetProp(plant_id, "atk",10)
+        VM_SetProp(plant_id, "attack_cycle", 78)
+	}
+	if(name=="triple_wine_rack"){
+		VM_SetProp(plant_id, "atk",10)
+        VM_SetProp(plant_id, "attack_cycle", 78)
+	}
+	if(name=="double_water_pipe"){
+		VM_SetProp(plant_id, "atk",10)
+        VM_SetProp(plant_id, "attack_cycle", 78)
+	}
+	if(name=="takoyaki"){
+		VM_SetProp(plant_id, "atk",10)
+        VM_SetProp(plant_id, "attack_cycle", 78)
+		VM_SetCardSlotProp("takoyaki", "vm_current_cost", 225)
+	}
+	if(name=="iron_fishbone"){
+		VM_SetCardSlotProp("iron_fishbone", "vm_current_cost", 125)
+	}
+	if(name=="chocolate_bread"){
+		VM_SetCardSlotProp("chocolate_bread", "vm_current_cost", 125)
+	}
+	if(name=="large_fire"){
+		VM_SetProp(plant_id,"attack_cycle",1440)
+		VM_SetCardSlotProp("large_fire", "vm_current_cost", 150)
+	}
+	if(name=="small_fire"){
+		VM_SetProp(plant_id, "attack_cycle", 1440)
+	}
+	if(name=="goblet_lamp"){
+		VM_SetProp(plant_id, "attack_cycle", 1440)
+		VM_SetProp(plant_id,"ice_timer",999999999)
+		VM_SetProp(plant_id, "is_frozen", 1)
+	}
+	if(name=="coffee_grounds"){
+		VM_SetCardProp(set_col,set_row,"goblet_lamp","ice_timer",1)
+		VM_SetCardProp(set_col,set_row,"goblet_lamp","is_frozen",0)
+	}
+	if(name=="cat_box"){
+		VM_SetProp(plant_id, "hp", 200)
+		VM_SetProp(plant_id, "maxhp", 200)
+	}																		// 卡片数据PvZ化
+	if(set_col<5){
+        y = VM_GetProp(plant_id, "y")   
+        VM_SetProp(plant_id,"y",y+(3-set_col)*15-5)
+    }else{
+        y = VM_GetProp(plant_id, "y")   
+        VM_SetProp(plant_id,"y",y-20)										// 卡片位置偏移适配屋顶地图
+	}
+}
+
+
+_VM_FRAME {
+	if (surprise_timer > -1){
+		surprise_timer = surprise_timer - 1
+	}																		// 每帧计时器-1，至-1为止
+	if (surprise_timer == 0){
+		surprise_enemy = 3													// 计时器数值为0时完成3次空投
+		while (surprise_enemy > 0){
+			surprise_col = VM_Random(4, 8)
+			surprise_row = VM_Random(1, 5)									// 每次空投抽取位置
+			surprise = VM_Random(1, 12000)									// 抽取怪种
+			if (surprise <= 4000){
+				VM_SpawnEnemy("normal_mouse", random_spawn, 100)
+			}elif (random_surprise <= 8000) {
+				VM_SpawnEnemy("football_fan_mouse", random_spawn, 285)
+			}else {
+				VM_SpawnEnemy("iron_pan_mouse", random_spawn, 650)
+			}																// 生成空投敌人
+			surprise_id = VM_GetLastCreatedEnemy()
+			VM_SetProp(surprise_id, "col", surprise_col)
+			VM_SetProp(surprise_id, "row", surprise_row)					// 将空投敌人传送至坐标
+			surprise_enemy = surprise_enemy - 1
+		}
+	}
+}
+
+
+_VM_WAVE_START {
+	w = VM_GetWave()									// 当前波数
+	VM_ShellPrint("当前大波数:",w)
+	sw = w * 10											// 修正小波数
+	enemy_cost = VM_Ceil(sw / 3.0)						// 每3波小波出怪量+1，向上取整
+	if(w > 0){
+		attendant_count = enemy_cost					// 计算旗帜随从数
+		enemy_cost = VM_Floor(enemy_cost * 2.5)			// 旗帜波2.5倍出怪量
+		random_spawn = VM_Random(1, 5)
+		VM_SpawnEnemy("lambo_mouse", random_spawn, 100)
+		enemy_cost = enemy_cost - 1						// 生成旗帜并占用对应出怪量
+		if (attendant_count > 8){
+			attendant_count = 8
+		}												// 限制随从数不超过8
+		while(attendant_count > 0){
+			random_spawn = VM_Random(1, 5)
+			VM_SpawnEnemy("normal_mouse", random_spawn, 100)
+			enemy_cost = enemy_cost - 1
+			attendant_count = attendant_count - 1
+		}												// 生成随从平民鼠并占用对应出怪量
+	}
+	if (sw < 5) {
+		enemy_class = 1									// 第1波解锁1阶段僵尸(普僵、旗帜、路障、铁桶、读报)
+	}elif(sw < 10){
+		enemy_class = 2									// 第5波解锁2阶段僵尸(撑杆、铁门、橄榄、舞王)
+	}elif(sw < 15){
+		enemy_class = 3									// 第10波解锁3阶段僵尸(潜水、冰车、雪橇、海豚、小丑、气球、矿工、跳跳、蹦极、扶梯、投篮)
+	}else{
+		enemy_class = 4									// 第15波解锁4阶段僵尸(巨人)
+	}
+	while(enemy_cost > 0){									// 循环抽怪至出怪量耗尽
+		random_spawn = VM_Random(1, 5)						// 随机行数
+		if (enemy_class <= 2){								// 1、2阶段
+			if (enemy_cost == 1) {			
+				random_enemy = VM_Random(1, 4000)
+			}elif (enemy_cost < 4) {
+				random_enemy = VM_Random(1, 8000)
+			}else{
+				random_enemy = VM_Random(1, 12000)
+			}
+			if( random_enemy <= 4000) {
+				VM_SpawnEnemy("normal_mouse", random_spawn, 100)				//普通僵尸：权重4000，等级1
+				enemy_cost = enemy_cost - 1
+			}elif (random_enemy <= 8000) {
+				VM_SpawnEnemy("football_fan_mouse", random_spawn, 285)			//路障僵尸：权重4000，等级2
+				football_fan = VM_GetLastCreatedEnemy()
+				VM_SetProp(football_fan, "helmet_max_hp", 185)
+				VM_SetProp(football_fan, "helmet_hp", 185)
+				enemy_cost = enemy_cost - 2
+			}else {
+				VM_SpawnEnemy("iron_pan_mouse", random_spawn, 650)				//铁桶僵尸：权重4000，等级4
+				iron_pan = VM_GetLastCreatedEnemy()
+				VM_SetProp(iron_pan, "helmet_max_hp", 550)
+				VM_SetProp(iron_pan, "helmet_hp", 550)
+				enemy_cost = enemy_cost - 4
+			}
+		}
+		if (enemy_class == 3) {													//3阶段
+			if (enemy_cost == 1) {			
+				random_enemy = VM_Random(1, 4000)
+			}elif (enemy_cost == 2) {
+				random_enemy = VM_Random(1, 8000)
+			}elif (enemy_cost == 3) {
+				random_enemy = VM_Random(1, 10000)
+			}elif (enemy_cost == 4) {
+				random_enemy = VM_Random(1, 15000)
+			}else {
+				random_enemy = VM_Random(1, 16500)
+			}
+			if (random_enemy <= 4000 ) {
+				VM_SpawnEnemy("normal_mouse", random_spawn, 100)
+				enemy_cost = enemy_cost - 1
+			}elif (random_enemy <= 8000) {
+				VM_SpawnEnemy("football_fan_mouse", random_spawn, 285)
+				football_fan = VM_GetLastCreatedEnemy()
+				VM_SetProp(football_fan, "helmet_max_hp", 185)
+				VM_SetProp(football_fan, "helmet_hp", 185)
+				enemy_cost = enemy_cost - 2
+			}elif (random_enemy <= 9000) {
+				VM_SpawnEnemy("machine_mouse", random_spawn, 167)				//玩偶匣僵尸：权重1000，等级3
+				enemy_cost = enemy_cost - 3
+			}elif (random_enemy <= 10000) {
+				plant_count = VM_GetPlantCount()							// 获取植物数量
+				if (plant_count < 2){										// 场上植物数 < 2
+				get_plant = 0
+					while (get_plant != -1) {
+						bat_col = VM_Random(0, 8)
+						bat_row = VM_Random(1, 5)
+						get_plant = VM_GetPlantAt(bat_col, bat_row,"all")
+						continue
+					}														// 反复抽取至空偷
+					bat = VM_SpawnBatMouse(bat_col, bat_row)
+					VM_SetProp(bat, "hp", 225)								// 生成飞贼
+					enemy_cost = enemy_cost - 3								// 扣除点数
+				}else{														// 场上植物数 >= 2
+					get_plant = -1
+					while (get_plant == -1) {
+						bat_col = VM_Random(0, 8)
+						bat_row = VM_Random(1, 5)
+						get_plant = VM_GetPlantAt(bat_col, bat_row,"all")
+						continue
+					}														// 反复抽取至偷中
+					bat = VM_SpawnBatMouse(bat_col, bat_row)
+					VM_SetProp(bat, "hp", 225)								// 生成飞贼
+					enemy_cost = enemy_cost - 3								// 扣除点数
+				}
+			}elif (random_enemy <= 11000) {
+				VM_SpawnEnemy("repairman_mouse", random_spawn, 167)
+				repairman = VM_GetLastCreatedEnemy()
+				VM_SetProp(repairman, "shield_max_hp", 250)
+				VM_SetProp(repairman, "shield_hp", 250)
+				enemy_cost = enemy_cost-4
+			}elif (random_enemy <= 15000) {
+				VM_SpawnEnemy("iron_pan_mouse", random_spawn, 650)
+				iron_pan = VM_GetLastCreatedEnemy()
+				VM_SetProp(iron_pan, "helmet_max_hp", 550)
+				VM_SetProp(iron_pan, "helmet_hp", 550)
+				enemy_cost = enemy_cost - 4
+			}else {
+				VM_SpawnEnemy("engineering_vehicle_mouse", random_spawn, 425)
+				enemy_cost = enemy_cost - 5
+			}
+		}
+		if (enemy_class == 4) {													//4阶加入出怪：巨人
+			if (enemy_cost == 1) {			
+				random_enemy = VM_Random(1, 4000)
+			}elif (enemy_cost == 2) {
+				random_enemy = VM_Random(1, 8000)
+			}elif (enemy_cost == 3) {
+				random_enemy = VM_Random(1, 10000)
+			}elif (enemy_cost == 4) {
+				random_enemy = VM_Random(1, 15000)
+			}elif (enemy_cost < 10) {
+				random_enemy = VM_Random(1, 16500)
+			}else {
+				random_enemy = VM_Random(1, 18000)
+			}
+			if (random_enemy <= 4000 ) {
+				VM_SpawnEnemy("normal_mouse", random_spawn, 100)
+				enemy_cost = enemy_cost - 1
+			}elif (random_enemy <= 8000) {
+				VM_SpawnEnemy("football_fan_mouse", random_spawn, 285)
+				football_fan = VM_GetLastCreatedEnemy()
+				VM_SetProp(football_fan, "helmet_max_hp", 185)
+				VM_SetProp(football_fan, "helmet_hp", 185)
+				enemy_cost = enemy_cost - 2
+			}elif (random_enemy <= 9000) {
+				VM_SpawnEnemy("machine_mouse", random_spawn, 167)
+				enemy_cost = enemy_cost - 3
+			}elif (random_enemy <= 10000) {
+				plant_count = VM_GetPlantCount()							// 获取植物数量
+				if (plant_count < 2){										// 场上植物数 < 2
+				get_plant = 0
+					while (get_plant != -1) {
+						bat_col = VM_Random(0, 8)
+						bat_row = VM_Random(1, 5)
+						get_plant = VM_GetPlantAt(bat_col, bat_row,"all")
+						continue
+					}														// 反复抽取至空偷
+					bat = VM_SpawnBatMouse(bat_col, bat_row)
+					VM_SetProp(bat, "hp", 225)								// 生成飞贼
+					enemy_cost = enemy_cost - 3								// 扣除点数
+				}else{														// 场上植物数 >= 2
+					get_plant = -1
+					while (get_plant == -1) {
+						bat_col = VM_Random(0, 8)
+						bat_row = VM_Random(1, 5)
+						get_plant = VM_GetPlantAt(bat_col, bat_row,"all")
+						continue
+					}														// 反复抽取至偷中
+					bat = VM_SpawnBatMouse(bat_col, bat_row)
+					VM_SetProp(bat, "hp", 225)								// 生成飞贼
+					enemy_cost = enemy_cost - 3								// 扣除点数
+				}
+			}elif (random_enemy <= 11000) {
+				VM_SpawnEnemy("repairman_mouse", random_spawn, 167)
+				repairman = VM_GetLastCreatedEnemy()
+				VM_SetProp(repairman, "shield_max_hp", 250)
+				VM_SetProp(repairman, "shield_hp", 250)
+				enemy_cost = enemy_cost - 4
+			}elif (random_enemy <= 15000) {
+				VM_SpawnEnemy("iron_pan_mouse", random_spawn, 650)
+				iron_pan = VM_GetLastCreatedEnemy()
+				VM_SetProp(iron_pan, "helmet_max_hp", 550)
+				VM_SetProp(iron_pan, "helmet_hp", 550)
+				enemy_cost = enemy_cost - 4
+			}elif (random_enemy <= 16500){
+				VM_SpawnEnemy("engineering_vehicle_mouse", random_spawn, 425)
+				enemy_cost = enemy_cost - 5
+			}else {
+				VM_SpawnEnemy("panda_mouse", random_spawn, 1500)
+				enemy_cost = enemy_cost - 10
+			}
+		}
+	}
+	if (sw == 30){
+		surprise_timer = 120
+		VM_ShowNotice("空投！")
+	}
+}
+
+
+_VM_SUBWAVE_START {
+    sw = VM_GetSubwave()               						 	// 当前子波数
+	if (sw == 0){
+		if (w != 0) {
+			subw = 10
+		}else{
+			subw = 0
+		}
+	}else{
+		subw = sw
+	}
+	sw = subw + w*10											//纠正波次
+	enemy_cost = VM_Ceil(sw/3.0)								//每3波小波出怪量+1，向上取整
+	VM_ShowNotice("当前波次:",sw,"，刷怪量：",enemy_cost)							//调试信息：广播当前小波
+	if (sw % 10 != 0) {						//仅非大波生成
+		if (sw < 5) {
+			enemy_class = 1					//第1波解锁1阶僵尸(普僵、旗帜、路障、铁桶、读报)
+		}elif(sw < 10){
+			enemy_class = 2					//第5波解锁2阶僵尸(撑杆、铁门、橄榄、舞王)
+		}elif(sw < 15){
+			enemy_class = 3					//第10波解锁3阶僵尸(潜水、冰车、雪橇、海豚、小丑、气球、矿工、跳跳、蹦极、扶梯、投篮)
+		}else{
+			enemy_class = 4					//第15波解锁4阶僵尸(巨人)
+		}
+		while(enemy_cost > 0){				//循环至出怪量归零
+			random_spawn = VM_Random(1, 5)	//随机行数
+			if (enemy_class <= 2){			//1阶加入出怪：领带、读报	//2阶加入出怪：撑杆、铁门、橄榄、舞王
+				if (enemy_cost == 1) {			
+					random_enemy = VM_Random(1, 4000)
+				}elif (enemy_cost < 4) {
+					random_enemy = VM_Random(1, 8000)
+				}else{
+					random_enemy = VM_Random(1, 12000)
+				}
+				if( random_enemy <= 4000) {
+					VM_SpawnEnemy("normal_mouse", random_spawn, 100)
+					enemy_cost = enemy_cost - 1
+				}elif (random_enemy <= 8000) {
+					VM_SpawnEnemy("football_fan_mouse", random_spawn, 285)
+					football_fan = VM_GetLastCreatedEnemy()
+					VM_SetProp(football_fan, "helmet_max_hp", 185)
+					VM_SetProp(football_fan, "helmet_hp", 185)
+					enemy_cost = enemy_cost - 2
+				}else {
+					VM_SpawnEnemy("iron_pan_mouse", random_spawn, 650)
+					iron_pan = VM_GetLastCreatedEnemy()
+					VM_SetProp(iron_pan, "helmet_max_hp", 550)
+					VM_SetProp(iron_pan, "helmet_hp", 550)
+					enemy_cost = enemy_cost - 4
+				}
+			}
+			if (enemy_class == 3) {			//3阶加入出怪：潜水、冰车、海豚、小丑、气球、矿工、跳跳、蹦极、扶梯、投篮
+				if (enemy_cost == 1) {			
+					random_enemy = VM_Random(1, 4000)
+				}elif (enemy_cost == 2) {
+					random_enemy = VM_Random(1, 8000)
+				}elif (enemy_cost == 3) {
+					random_enemy = VM_Random(1, 10000)
+				}elif (enemy_cost == 4) {
+					random_enemy = VM_Random(1, 15000)
+				}else {
+					random_enemy = VM_Random(1, 16500)
+				}
+				if (random_enemy <= 4000 ) {
+					VM_SpawnEnemy("normal_mouse", random_spawn, 100)
+					enemy_cost = enemy_cost - 1
+				}elif (random_enemy <= 8000) {
+					VM_SpawnEnemy("football_fan_mouse", random_spawn, 285)
+					football_fan = VM_GetLastCreatedEnemy()
+					VM_SetProp(football_fan, "helmet_max_hp", 185)
+					VM_SetProp(football_fan, "helmet_hp", 185)
+					enemy_cost = enemy_cost - 2
+				}elif (random_enemy <= 9000) {
+					VM_SpawnEnemy("machine_mouse", random_spawn, 167)
+					enemy_cost = enemy_cost - 3
+				}elif (random_enemy <= 10000) {
+					plant_count = VM_GetPlantCount()							// 获取植物数量
+					if (plant_count < 2){										// 场上植物数 < 2
+						get_plant = 0
+						while (get_plant != -1) {
+							bat_col = VM_Random(0, 8)
+							bat_row = VM_Random(1, 5)
+							get_plant = VM_GetPlantAt(bat_col, bat_row,"all")
+							continue
+						}														// 反复抽取至空偷
+						bat = VM_SpawnBatMouse(bat_col, bat_row)
+						VM_SetProp(bat, "hp", 225)								// 生成飞贼
+						enemy_cost = enemy_cost - 3								// 扣除点数
+					}else{														// 场上植物数 >= 2
+						get_plant = -1
+						while (get_plant == -1) {
+							bat_col = VM_Random(0, 8)
+							bat_row = VM_Random(1, 5)
+							get_plant = VM_GetPlantAt(bat_col, bat_row,"all")
+							continue
+						}														// 反复抽取至偷中
+						bat = VM_SpawnBatMouse(bat_col, bat_row)
+						VM_SetProp(bat, "hp", 225)								// 生成飞贼
+						enemy_cost = enemy_cost - 3								// 扣除点数
+					}
+				}elif (random_enemy <= 11000) {
+					VM_SpawnEnemy("repairman_mouse", random_spawn, 167)
+					repairman = VM_GetLastCreatedEnemy()
+					VM_SetProp(repairman, "shield_max_hp", 250)
+					VM_SetProp(repairman, "shield_hp", 250)
+					enemy_cost = enemy_cost-4
+				}elif (random_enemy <= 15000) {
+					VM_SpawnEnemy("iron_pan_mouse", random_spawn, 650)
+					iron_pan = VM_GetLastCreatedEnemy()
+					VM_SetProp(iron_pan, "helmet_max_hp", 550)
+					VM_SetProp(iron_pan, "helmet_hp", 550)
+					enemy_cost = enemy_cost - 4
+				}else {
+					VM_SpawnEnemy("engineering_vehicle_mouse", random_spawn, 425)
+					enemy_cost = enemy_cost - 5
+				}
+			}
+			if (enemy_class == 4) {			//4阶加入出怪：巨人
+				if (enemy_cost == 1) {			
+					random_enemy = VM_Random(1, 4000)
+				}elif (enemy_cost == 2) {
+					random_enemy = VM_Random(1, 8000)
+				}elif (enemy_cost == 3) {
+					random_enemy = VM_Random(1, 10000)
+				}elif (enemy_cost == 4) {
+					random_enemy = VM_Random(1, 15000)
+				}elif (enemy_cost < 10) {
+					random_enemy = VM_Random(1, 16500)
+				}else {
+					random_enemy = VM_Random(1, 18000)
+				}
+				if (random_enemy <= 4000 ) {
+					VM_SpawnEnemy("normal_mouse", random_spawn, 100)
+					enemy_cost = enemy_cost - 1
+				}elif (random_enemy <= 8000) {
+					VM_SpawnEnemy("football_fan_mouse", random_spawn, 285)
+					football_fan = VM_GetLastCreatedEnemy()
+					VM_SetProp(football_fan, "helmet_max_hp", 185)
+					VM_SetProp(football_fan, "helmet_hp", 185)
+					enemy_cost = enemy_cost - 2
+				}elif (random_enemy <= 9000) {
+					VM_SpawnEnemy("machine_mouse", random_spawn, 167)
+					enemy_cost = enemy_cost - 3
+				}elif (random_enemy <= 10000) {
+					plant_count = VM_GetPlantCount()							// 获取植物数量
+					if (plant_count < 2){										// 场上植物数 < 2
+					get_plant = 0
+						while (get_plant != -1) {
+							bat_col = VM_Random(0, 8)
+							bat_row = VM_Random(1, 5)
+							get_plant = VM_GetPlantAt(bat_col, bat_row,"all")
+							continue
+						}														// 反复抽取至空偷
+						bat = VM_SpawnBatMouse(bat_col, bat_row)
+						VM_SetProp(bat, "hp", 225)								// 生成飞贼
+						enemy_cost = enemy_cost - 3								// 扣除点数
+					}else{														// 场上植物数 >= 2
+						get_plant = -1
+						while (get_plant == -1) {
+							bat_col = VM_Random(0, 8)
+							bat_row = VM_Random(1, 5)
+							get_plant = VM_GetPlantAt(bat_col, bat_row,"all")
+							continue
+						}														// 反复抽取至偷中
+						bat = VM_SpawnBatMouse(bat_col, bat_row)
+						VM_SetProp(bat, "hp", 225)								// 生成飞贼
+						enemy_cost = enemy_cost - 3								// 扣除点数
+					}
+				}elif (random_enemy <= 11000) {
+					VM_SpawnEnemy("repairman_mouse", random_spawn, 167)
+					repairman = VM_GetLastCreatedEnemy()
+					VM_SetProp(repairman, "shield_max_hp", 250)
+					VM_SetProp(repairman, "shield_hp", 250)
+					enemy_cost = enemy_cost - 4
+				}elif (random_enemy <= 15000) {
+					VM_SpawnEnemy("iron_pan_mouse", random_spawn, 650)
+					iron_pan = VM_GetLastCreatedEnemy()
+					VM_SetProp(iron_pan, "helmet_max_hp", 550)
+					VM_SetProp(iron_pan, "helmet_hp", 550)
+					enemy_cost = enemy_cost - 4
+				}elif (random_enemy <= 16500){
+					VM_SpawnEnemy("engineering_vehicle_mouse", random_spawn, 425)
+					enemy_cost = enemy_cost - 5
+				}else {
+					VM_SpawnEnemy("panda_mouse", random_spawn, 1500)
+					enemy_cost = enemy_cost - 10
+				}
+			}
+		}
+	}
+}
+
+
+_VM_ENEMY_SPAWNED {
+	new_id = VM_GetLastCreatedEnemy()
+	new_name = VM_GetProp(new_id, "object_name")
+	if (new_name == "obj_machine_mouse") {
+		VM_SetProp(new_id, "move_speed", VM_Random(66, 68)/100.0)
+	}elif (new_name == "obj_repairman_mouse") {
+		VM_SetProp(new_id, "move_speed", VM_Random(79, 81)/100.0)
+	}elif (new_name == "obj_lambo_mouse") {
+		VM_SetProp(new_id, "move_speed", 0.45)
+	}elif (new_name == "obj_bat_mouse") {
+	}else {
+		VM_SetProp(new_id, "move_speed", VM_Random(23, 37)/100.0)
+	}
+}

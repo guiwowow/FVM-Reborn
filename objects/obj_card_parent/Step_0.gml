@@ -64,7 +64,20 @@ if !(variable_instance_exists(id, "platform_grid_lock") && platform_grid_lock) {
     grid_row = grid_pos.row
 }
 
-depth = calculate_plant_depth(grid_pos.col, grid_pos.row, plant_type)
+// -1 列卡片（左边缘外的传送带/召唤位）：col 是负数或超出列数时按环绕列算深度，
+// 否则深度会算到屏幕外（对齐联机版 origin/main）。
+if (grid_pos.col > 50) {
+	depth = calculate_plant_depth(grid_pos.col - 64 - global.grid_cols, grid_pos.row, plant_type)
+} else {
+	depth = calculate_plant_depth(grid_pos.col, grid_pos.row, plant_type)
+}
+
+// 受伤 VM 挂载点：本帧血量下降 → 触发脚本的 _VM_CARD_DAMAGED
+if (pre_hp > hp && buffer_exists(global._VM_CARD_DAMAGED)) {
+	global._VM_last_damaged_card = id;
+	VM_Execute(global.__vm, global._VM_CARD_DAMAGED, "_VM_CARD_DAMAGED");
+}
+pre_hp = hp;
 if instance_exists(banding_star_obj){
 banding_star_obj.depth = depth - 1
 }

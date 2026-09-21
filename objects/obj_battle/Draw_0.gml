@@ -1,4 +1,22 @@
-draw_sprite(global.level_data.level_sprite,map_spr_index,0,0)
+// 地图背景（支持地图脚本换背景：VM_SetMapBackground 改 target，这里做交叉淡入过渡）
+// 移植自联机版 obj_battle/Draw_0：cur==tgt 时直接画；否则两张按 alpha 叠画并推进过渡进度。
+// 无脚本时两者恒等 → 与原来的 draw_sprite 行为完全一致，零开销。
+var _cur = global.map_sprite_current;
+var _tgt = global.map_sprite_target;
+if (_cur == _tgt) {
+    draw_sprite(_cur, map_spr_index, 0, 0);
+    global.map_fade_alpha = 0;
+} else {
+    var _a = global.map_fade_alpha;
+    draw_sprite_ext(_cur, map_spr_index, 0, 0, 1, 1, 0, c_white, 1 - _a);
+    draw_sprite_ext(_tgt, map_spr_index, 0, 0, 1, 1, 0, c_white, _a);
+    _a += global.map_fade_step;
+    if (_a >= 1) {
+        global.map_sprite_current = _tgt;
+        _a = 0;
+    }
+    global.map_fade_alpha = _a;
+}
 
 // PVZ 式放置引导线：选中卡片/铲子时高亮鼠标所在行+列（白色半透明）
 // 画在 obj_battle 层（depth 50）→ 地图之上、植物之下（PVZ 同款层级）
@@ -34,6 +52,14 @@ if (_show && !global.is_paused) {
     draw_rectangle(_ox, _oy + _row * _ch, _ox + global.grid_cols * _cw, _oy + (_row + 1) * _ch, false);
     draw_rectangle(_ox + _col * _cw, _oy, _ox + (_col + 1) * _cw, _oy + global.grid_rows * _ch, false);
     draw_set_alpha(1);
+}
+
+// 固定 64 个贴图槽（地图脚本 VM_SetDrawSlot）：画在地图层之上、HUD 之下。
+// 无脚本时全部是 noone → 循环 64 次空转，开销可忽略。
+for (var _si = 0; _si < 64; _si++) {
+    var _slot = global.map_draw_slots[_si];
+    if (_slot.sprite == noone || _slot.sprite == "" || _slot.sprite == -1) continue;
+    draw_sprite_ext(_slot.sprite, 0, _slot.x, _slot.y, _slot.image_xscale, _slot.image_yscale, _slot.image_angle, c_white, _slot.alpha);
 }
 
 draw_set_valign(fa_top)

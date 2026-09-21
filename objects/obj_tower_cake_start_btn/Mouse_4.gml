@@ -9,6 +9,8 @@ if not obj_tower_cake_bg.is_submenu_opened && is_unlocked{
 			global.map_id = "tower_cake"
 			global.map_name = "魔塔蛋糕"
 			global.gui_stack.to(room_ready)
+			// 魔塔蛋糕没有地图脚本：重置 VM（理由同 obj_levelselect_button）
+			VM_InitRoomEntry(undefined);
 		}
 	}
 	audio_play_sound(snd_button,0,0)
