@@ -114,6 +114,18 @@ function show_notice(notice_text, life) {
     if (!instance_exists(obj_notice_controller)) {
         instance_create_depth(0, 0, -9900, obj_notice_controller);
     }
+    // 同文案去重：队列里已有同一条就把**那一条**重新计时（而不是再推一条）
+    //   —— 周期性触发的提示（例如每 0.8s 一次的倍速探测）若不去重，
+    //     会变成「同一条通知永远停在滑入起点」，屏幕上就是一条几像素的残影。
+    for (var _di = 0; _di < array_length(global.notice_list); _di++) {
+        var _old_n = global.notice_list[_di];
+        if (_old_n.text == notice_text) {
+            _old_n.frames = 0;
+            _old_n.life   = life;
+            global.notice_list[_di] = _old_n;
+            return;
+        }
+    }
     // 上限：最多同时 6 条，超出丢掉最旧的 —— 防止突发刷通知时无限向下堆叠
     while (array_length(global.notice_list) > 6) {
         array_delete(global.notice_list, 0, 1);
@@ -195,6 +207,12 @@ function draw_notices() {
         var _y1 = _stack_y + _off;
         var _x2 = _x1 + _pw;
         var _y2 = _y1 + _ph;
+
+        // 几何硬保证：面板在屏幕上**露出的高度**不足一个内边距就整条不画。
+        //   只判 _t<=0 不够 —— 滑入/滑出的中间帧本来就会"只露几像素"，
+        //   一旦 frames 因任何原因卡在那一帧，屏幕上就永远挂着一条细边。
+        //   这里按最终坐标判，跟动画进度、房间高度、面板宽度全都无关。
+        if (_y2 < NOTICE_PAD_Y) continue;
 
         // 面板：白底 + 黑色边框 + 底部阴影（2026-09-21 按用户要求改）
         // 用 draw_roundrect_ext 显式给半径：默认半径在低分辨率下弧只有几段，
