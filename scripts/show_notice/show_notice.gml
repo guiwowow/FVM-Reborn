@@ -107,6 +107,17 @@ function show_notice(notice_text, life) {
     if (!variable_global_exists("notice_list")) {
         global.notice_list = [];
     }
+    // 自愈：控制器只在 room_init 摆了 1 个实例，而本工程**所有房间的 persistent 都是 false**
+    // → 换房间时它可能被销毁，于是通知只进不出（看不到老化、也看不到绘制），
+    //   下次它再出现时就会「一堆不同长度的 toast 同时堆在屏幕顶端」。
+    // 所以每次弹通知都确认控制器活着，不在就地补一个（depth 与 Create 一致）。
+    if (!instance_exists(obj_notice_controller)) {
+        instance_create_depth(0, 0, -9900, obj_notice_controller);
+    }
+    // 上限：最多同时 6 条，超出丢掉最旧的 —— 防止突发刷通知时无限向下堆叠
+    while (array_length(global.notice_list) > 6) {
+        array_delete(global.notice_list, 0, 1);
+    }
     array_push(global.notice_list, notice);
 }
 
@@ -129,6 +140,10 @@ function update_notices() {
 /// @description 绘制所有通知（由 obj_notice_controller 的 Draw 调用）
 function draw_notices() {
     if (!variable_global_exists("notice_list")) return;
+    // 老化放在绘制入口而不是 Step：只要这一帧真的把通知画出来了，就一定会推进并到期回收。
+    // 原先只在 obj_notice_controller/Step_0 里推 —— 一旦那个实例缺席（见 show_notice 里的说明），
+    // 通知就永远停在第 0 帧（表现为「贴在屏幕顶端漏出几个像素、一直不消失」）。
+    update_notices();
 
     draw_set_font(font_yuan);
     var _cx      = room_width * 0.5;
@@ -171,8 +186,10 @@ function draw_notices() {
             _t = 1 - (notice.frames - NOTICE_SLIDE_IN - notice.life) / NOTICE_SLIDE_OUT;   // 原路滑回
         }
         _t = clamp(_t, 0, 1);
+        // 完全收起（_t 到底）就整条不画：否则面板顶边算下来仍可能残留几个像素贴在屏幕顶端
+        if (_t <= 0) continue;
         // 未落位时整体抬到屏幕上方：面板高 + 停留位 + 余量
-        var _off = -(1 - _t) * (_ph + _rest + 40);
+        var _off = -(1 - _t) * (_ph + _rest + 80);
 
         var _x1 = _cx - _pw * 0.5;
         var _y1 = _stack_y + _off;
@@ -335,13 +352,25 @@ function draw_error_dialog() {
     draw_set_color(make_color_rgb(180, 180, 190));
     draw_line(_L.x1 + 30, _L.y1 + 86, _L.x2 - 30, _L.y1 + 86);
     // 正文（显示用；过长只截断显示，导出仍是全文）
+    // 正文：先按字数截断，再按**可用高度**截断
+    //   —— draw_text_ext 的第 5 参只管换行宽度，**不做裁剪**。
+    //     原来的 900 字按 34px 行距约 22 行 ≈ 750px，而面板可用高度只有约 400px
+    //     → 长报错直接画到窗口外面（真机实测）。所以必须自己算高度并截。
+    var _maxw  = (_L.x2 - _L.x1) - 68;
+    var _avail = (_L.ok_y1 - 24) - (_L.y1 + 106);      // 从正文顶到按钮上方
+    if (_avail < 40) _avail = 40;
     var _show = string(_d.body);
-    if (string_length(_show) > 900) {
-        _show = string_copy(_show, 1, 900) + "\n…（内容过长，点[导出错误报告]可复制完整信息）";
+    if (string_length(_show) > 900) _show = string_copy(_show, 1, 900);
+    if (string_height_ext(_show, 34, _maxw) > _avail) {
+        var _n = string_length(_show);
+        while (_n > 20 && string_height_ext(string_copy(_show, 1, _n), 34, _maxw) > _avail) {
+            _n -= 20;
+        }
+        _show = string_copy(_show, 1, _n) + "\n…（内容过长，点[导出错误报告]可复制完整信息）";
     }
     draw_set_color(make_color_rgb(40, 40, 50));
     draw_set_valign(fa_top);
-    draw_text_ext(_L.x1 + 34, _L.y1 + 106, _show, 34, (_L.x2 - _L.x1) - 68);
+    draw_text_ext(_L.x1 + 34, _L.y1 + 106, _show, 34, _maxw);
     // 两个按钮
     var _mx = mouse_x;
     var _my = mouse_y;
