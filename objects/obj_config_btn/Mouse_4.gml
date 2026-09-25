@@ -1,4 +1,4 @@
 if obj_player_info_ui.menu_type == 0{
 	obj_player_info_ui.menu_type = 2
-	audio_play_sound(snd_button,0,0)
+	global.audio.play(snd_button,0,0)
 }

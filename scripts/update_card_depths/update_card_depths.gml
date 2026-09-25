@@ -3,6 +3,9 @@
 /// @param {real} col 网格列
 /// @param {real} row 网格行
 function update_card_depths(col, row) {
+    // ⚠️ 2026-09-21 崩溃修复：入口夹紧（ds_grid_get 越界 = 原生硬崩，实测 SIGSEGV）
+    col = clamp(col, 0, ds_grid_width(global.grid_plants) - 1);
+    row = clamp(row, 0, ds_grid_height(global.grid_plants) - 1);
     var plant_list = ds_grid_get(global.grid_plants, col, row);
     
     for (var i = 0; i < ds_list_size(plant_list); i++) {

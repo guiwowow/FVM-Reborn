@@ -48,6 +48,9 @@ function array_index_of(array, value) {
 /// @param {int} col 网格列
 /// @param {int} row 网格行
 function sort_plants_in_grid(col, row) {
+    // ⚠️ 2026-09-21 崩溃修复：入口夹紧（ds_grid_get 越界 = 原生硬崩，实测 SIGSEGV）
+    col = clamp(col, 0, ds_grid_width(global.grid_plants) - 1);
+    row = clamp(row, 0, ds_grid_height(global.grid_plants) - 1);
     var plant_list = ds_grid_get(global.grid_plants, col, row);
     
     // 获取有效的植物实例

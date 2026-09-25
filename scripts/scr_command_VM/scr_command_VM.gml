@@ -715,7 +715,7 @@ function VM_GameWin() {
     global.game_over = true;
     var inst = instance_create_depth(room_width / 2, room_height / 2, -3001, obj_game_over);
     inst.sprite_index = spr_win;
-    audio_play_sound(snd_win, 0, 0);
+    global.audio.play(snd_win, 0, 0);
 }
 
 /// @function VM_GameLose()
@@ -730,7 +730,7 @@ function VM_GameLose() {
     global.is_paused = true;
     global.game_over = true;
     instance_create_depth(room_width / 2, room_height / 2, -3001, obj_game_over);
-    audio_play_sound(snd_lose, 0, 0);
+    global.audio.play(snd_lose, 0, 0);
 }
 
 /// @function VM_SpawnCats(enable)
@@ -1935,7 +1935,7 @@ function VM_PlaySound(name_addr) {
 	var _name = vm_arg(name_addr);
 	var _snd = asset_get_index(_name);
 	if (_snd == -1 && is_real(_name)) _snd = _name;   // 本地加载的音频 ID
-	if (_snd != -1) audio_play_sound(_snd, 0, 0);
+	if (_snd != -1) global.audio.play(_snd, 0, 0);
 }
 
 /// @function VM_LoadSound(path)
@@ -2309,6 +2309,7 @@ function VM_SetProp(inst_id_addr, prop_addr, value_addr) {
     var inst_id = vm_read_mem(global.__vm, inst_id_addr);
     var prop = vm_read_mem(global.__vm, prop_addr);
     var value = vm_read_mem(global.__vm, value_addr);
+    if (vm_trace_detail_on()) vm_trace("      SetProp " + string(inst_id) + " " + string(prop) + "=" + string(value));
     // 特殊实例 id 0：写全局变量（0 永远不是真实实例 id），
     // 插件可用 VM_SetProp(0, "名字", 值) 定义/修改全局，不存在会自动创建
     if (inst_id == 0) {
@@ -2331,7 +2332,7 @@ function VM_SetProp(inst_id_addr, prop_addr, value_addr) {
 		
 		
 	if(prop=="grid_col"||prop=="grid_row"){
-		if( object_is_ancestor(obj_card_parent, instance_id) ){
+		if( false ){   // [崩溃修复 2026-09-21] 原文 instance_id —— GML 没有这个内建变量（GmlSpec 里只作为函数签名的参数名出现），本函数参数叫 inst_id。脚本一旦 VM_SetProp(卡,"grid_col"/"grid_row",…) 就抛未定义变量报错，安卓端表现为应用静默退出（实测 exit-info: reason=1 EXIT_SELF、logcat 无异常）。故这两段网格记账**从未真正执行过**，保持不执行 = 行为等价的安全修法。ponytail: 要真正实现就把 instance_id 换成 inst_id，并在 ds_grid_get 前判 col/row 落在 ds_grid_width/height(global.grid_plants) 内、ds_list_delete 前判 ds_exists(_list,ds_type_list) 且 index>=0（grid_plants 越界正是 handoff §3.7 记过的原生硬崩元凶）。
 			var _list = ds_grid_get(global.grid_plants, instance_id.grid_col, instance_id.grid_row);
 			ds_list_delete(_list,ds_list_find_index(_list,inst_id))
 		}
@@ -2341,13 +2342,15 @@ function VM_SetProp(inst_id_addr, prop_addr, value_addr) {
 		update_plant_bindings(inst_id);
 	}
 	if(prop=="grid_col"||prop=="grid_row"){
-		if( object_is_ancestor(obj_card_parent, instance_id) ){
+		if( false ){   // [崩溃修复 2026-09-21] 原文 instance_id —— GML 没有这个内建变量（GmlSpec 里只作为函数签名的参数名出现），本函数参数叫 inst_id。脚本一旦 VM_SetProp(卡,"grid_col"/"grid_row",…) 就抛未定义变量报错，安卓端表现为应用静默退出（实测 exit-info: reason=1 EXIT_SELF、logcat 无异常）。故这两段网格记账**从未真正执行过**，保持不执行 = 行为等价的安全修法。ponytail: 要真正实现就把 instance_id 换成 inst_id，并在 ds_grid_get 前判 col/row 落在 ds_grid_width/height(global.grid_plants) 内、ds_list_delete 前判 ds_exists(_list,ds_type_list) 且 index>=0（grid_plants 越界正是 handoff §3.7 记过的原生硬崩元凶）。
 			var _list = ds_grid_get(global.grid_plants, instance_id.grid_col, instance_id.grid_row);
 			ds_list_add(_list,instance_id)
 		}
 	}
 	if(prop=="shape" || prop=="skill"|| prop=="current_level" ){
-		network_apply_plant_level(_plant,true)
+		if (variable_instance_exists(inst_id, "current_level")) {
+			network_apply_plant_level(inst_id, true);   // [崩溃修复 2026-09-21] 原文写的是 _plant —— 本函数内从未定义、也非全局 ⇒ 脚本设 shape/skill/current_level 即抛未定义变量、应用静默退出。本意是对刚改了属性的那个实例生效（同文件 1844/1847 行同写法）。
+		}
 	}
     if (global.network.mode == "server") {
         var _nid = ds_map_exists(global.network.map_instance_id_net_id, inst_id) ? global.network.map_instance_id_net_id[? inst_id] : -1;

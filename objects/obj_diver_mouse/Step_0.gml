@@ -35,7 +35,7 @@ else{
 				state = ENEMY_STATE.ACTING
 				sprite_index = spr_diver_mouse_enter
 				timer = 0
-				audio_play_sound(snd_enter_water,0,0)
+				global.audio.play(snd_enter_water,0,0)
 				reversed = false
 			}
 			move_anim = 4
@@ -46,7 +46,7 @@ else{
 		//		state = ENEMY_STATE.ACTING
 		//		sprite_index = spr_diver_mouse_enter
 		//		timer = 0
-		//		audio_play_sound(snd_enter_water,0,0)
+		//		global.audio.play(snd_enter_water,0,0)
 		//		reversed = true
 		//	}
 		//	move_anim = 8

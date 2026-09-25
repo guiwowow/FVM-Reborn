@@ -88,6 +88,9 @@ speed_up = false
 global.app_surf_w = 0
 global.app_surf_h = 0
 speed_up_set(false)   // 回 1x：顺带删掉 runtime 的 2x 标志文件、恢复 application_surface 分辨率
+// 「本关已证明能上 120」的铁证也随关卡重置：上一关证明过 ≠ 这一关也证明过
+// （免回弹规则的粒度是**每关**，见 scripts/speed_up_control 的 SPEED_UP_PROVEN_FPS）
+global.speed_up_proven = false
 time_limit = -1
 timer_pause = false
 

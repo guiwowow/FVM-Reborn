@@ -38,7 +38,8 @@ for (var i = 0; i < array_length(buttons); i++) {
 					if instance_exists(obj_world_map_button){
 						obj_world_map_button.world_map = 0
 					}
-					if global.menu_screen{
+					if global.menu_screen{ vm_trace_end();   // 玩家主动确认退出 → 面包屑销账
+
 						game_end()
 					}
 					else{
@@ -51,7 +52,7 @@ for (var i = 0; i < array_length(buttons); i++) {
 					}
                     break;
             }
-			audio_play_sound(snd_button,0,0)
+			global.audio.play(snd_button,0,0)
         }
         break;
     }

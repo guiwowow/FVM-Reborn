@@ -65,6 +65,16 @@ if attack_timer == 15 * current_flash_speed - 1{
 		    logical_row = grid_pos_direct.row;
 		}
 		
+		// ⚠️ 2026-09-21 崩溃修复：平台把本体带出棋盘/画面时，上面按平台 span
+		//    （start_col + current_offset，脚本给的 start_col 可以贴边甚至越界）算出的
+		//    logical_col/row 会落在网格外，再经 card_created → ds_grid_get(global.grid_plants,…)
+		//    就是**原生越界硬崩**（实测 exit-info reason=5 APP CRASH(NATIVE) status=11 = SIGSEGV）。
+		//    越界的落点直接放弃本帧生成（也不注册），避免崩在无边界检查的网格读取上。
+		if (logical_col < 0 || logical_row < 0
+		    || logical_col >= ds_grid_width(global.grid_plants)
+		    || logical_row >= ds_grid_height(global.grid_plants)) {
+			exit;
+		}
 		var logical_world = get_world_position_from_grid(logical_col, logical_row);
 		var new_card = instance_create_depth(logical_world.x + platform_shift_x, logical_world.y + platform_shift_y, 0, card_slot_data[? "obj"])
 		card_created(new_card, logical_col, logical_row)

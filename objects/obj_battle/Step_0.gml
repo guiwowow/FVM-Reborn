@@ -69,7 +69,7 @@ if global.debug{
 		global.game_over = true
 		var inst = instance_create_depth(room_width/2,room_height/2,-3001,obj_game_over)
 		inst.sprite_index = spr_win
-		audio_play_sound(snd_win,0,0)
+		global.audio.play(snd_win,0,0)
 	}
 
 	if keyboard_check_pressed(ord("R")){
@@ -84,7 +84,7 @@ if global.debug{
 			new_plant.flame_produce = 15000
 			new_plant.ice_timer = 600
 			instance_create_depth(grid_pos.x,grid_pos.y,-2,obj_place_effect)        
-			audio_play_sound(snd_place1,0,0)
+			global.audio.play(snd_place1,0,0)
 		}
 	}
 
@@ -101,7 +101,7 @@ if global.debug{
 			new_plant.ice_timer = 600
 			new_plant.frozen_timer = 240
 			instance_create_depth(grid_pos.x,grid_pos.y,-2,obj_place_effect)        
-			audio_play_sound(snd_place1,0,0)
+			global.audio.play(snd_place1,0,0)
 		}
 	}
 }
@@ -118,7 +118,7 @@ if time_limit > 0{
 		global.is_paused = true
 		global.game_over = true
 		instance_create_depth(room_width/2,room_height/2,-3001,obj_game_over)
-		audio_play_sound(snd_lose,0,0)
+		global.audio.play(snd_lose,0,0)
 	}
 }
 
@@ -149,7 +149,7 @@ if (global._VM_battle_start_done) {
 if global._VM_wave_auto && battle_time >= (global.level_file.first_wave_delay * 60) && level_stage == "ready" {
     
     level_stage = "pre"
-    audio_play_sound(snd_mouse_wave_attack, 0, 0)
+    global.audio.play(snd_mouse_wave_attack, 0, 0)
     
     enemy_subwave_summon()
     
@@ -202,7 +202,7 @@ if wave_timer <= 0 && level_stage == "pre" && global._VM_wave_auto{
 		else if current_wave < total_wave{
 			current_wave += 1
 			current_subwave = 0
-			audio_play_sound(snd_mouse_wave_attack,0,0)
+			global.audio.play(snd_mouse_wave_attack,0,0)
 			instance_create_depth(room_width/2,room_height/2,-300,obj_huge_wave_text)
 		}
 	}
@@ -229,59 +229,11 @@ if (buffer_exists(global._VM_FRAME)) {
     VM_Execute(global.__vm, global._VM_FRAME, "_VM_FRAME");
 }
 // 战斗平稳跑满 120 帧 → 记一次"未崩溃"。此后即使再崩，也能从追踪看出是在哪一段。
-if (battle_time == 120) vm_trace_end()
-
-// ===== 临时诊断（2026-09-21）：脚本自定义资源加载与实验室目录清单 =====
-// 背景：地图脚本的自定义贴图在安卓上加载不到，而 release 包的沙盒 adb 读不到
-//   （SDK35 / 非 debuggable / 内部存储 Permission denied / 外部目录为空），
-//   唯一取证通道是游戏自己的弹窗。进图 30 帧后弹出，此刻脚本的资源加载已全部发生。
-//   用完即删。
-if (battle_time == 30 && !variable_global_exists("_vm_diag_shown")) {
-    global._vm_diag_shown = true
-    var _d = "[脚本资源诊断]" + chr(10)
-    _d += "json=" + string(global._file_cache_json_path) + chr(10)
-    if (variable_global_exists("_vm_bin_path")) {
-        _d += "bin=" + string(global._vm_bin_path) + " 存在=" + string(file_exists(global._vm_bin_path)) + chr(10)
-    }
-    _d += chr(10) + "--- 脚本请求的资源（候选路径 + exists）---" + chr(10)
-    if (variable_global_exists("_vm_spr_diag")) {
-        _d += string(global._vm_spr_diag)
-    } else {
-        _d += "(脚本没有请求任何资源)" + chr(10)
-    }
-    _d += chr(10) + "--- laboratory/ 目录实际文件 ---" + chr(10)
-    var _n = 0
-    var _f = file_find_first("laboratory/*", fa_directory | fa_archive | fa_readonly)
-    while (_f != "" && _n < 60) {
-        if (_f != "." && _f != "..") {
-            _d += "  " + _f + chr(10)
-            _n++
-        }
-        _f = file_find_next()
-    }
-    file_find_close()
-    if (_n == 0) _d += "  (空)" + chr(10)
-    _d += "共 " + string(_n) + " 项（最多列 60）"
-    // 贴图槽状态：脚本用 VM_SetDrawSlot 写入，槽里 sprite==noone 就不画
-    _d += chr(10) + chr(10) + "--- 贴图槽状态 ---" + chr(10)
-    var _used = 0
-    for (var _si = 0; _si < 64; _si++) {
-        var _sl = global.map_draw_slots[_si]
-        if (_sl.sprite != noone && _sl.sprite != -1) {
-            _d += "  后层槽" + string(_si) + " spr=" + string(_sl.sprite) + " @" + string(_sl.x) + "," + string(_sl.y) + " a=" + string(_sl.alpha) + chr(10)
-            _used++
-        }
-        var _sf = global.map_draw_slots_front[_si]
-        if (_sf.sprite != noone && _sf.sprite != -1) {
-            _d += "  前层槽" + string(_si) + " spr=" + string(_sf.sprite) + " @" + string(_sf.x) + "," + string(_sf.y) + " a=" + string(_sf.alpha) + chr(10)
-            _used++
-        }
-        if (_used > 20) break
-    }
-    if (_used == 0) _d += "  (全部 64+64 个槽都是空的 —— 脚本没有设置任何绘制槽)" + chr(10)
-    _d += "非空槽数=" + string(_used)
-    show_error_dialog("脚本资源诊断", _d)
+if (battle_time == VM_TRACE_DETAIL_FRAMES) {
+    vm_trace_detail_set(false)          // 只关"逐 CALL 明细"（帧率修复保住）
+    vm_trace("[稳定] 战斗跑满 " + string(battle_time) + " 帧")   // 但**不写 OK end**
 }
+
 // 鼠标左/右键按下
 if (buffer_exists(global._VM_MOUSE_LEFT) && mouse_check_button_pressed(mb_left)) {
     VM_Execute(global.__vm, global._VM_MOUSE_LEFT, "_VM_MOUSE_LEFT");
@@ -401,7 +353,7 @@ if global.debug{
 			global.game_over = true
 			var inst = instance_create_depth(room_width/2,room_height/2,-3001,obj_game_over)
 			inst.sprite_index = spr_win
-			audio_play_sound(snd_win,0,0)
+			global.audio.play(snd_win,0,0)
 		}
 		else if current_wave < total_wave{
 			current_wave += 1

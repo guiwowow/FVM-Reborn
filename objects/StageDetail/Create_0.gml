@@ -119,7 +119,9 @@ function on_create_room() {
     global.__vm.rng_state = irandom(2147483646) + 1;
 
     // 面包屑：这一整段（尤其 buffer_load + VM_InitRoomEntry）是最可能原生崩溃的地方
-    vm_trace_begin("StageDetail.on_create_room")
+        // 用 vm_trace_arm（不是 begin）：已被开机武装过就只追加、绝不截断，
+    // 这样"开机 → 房间轨迹 → 进图各阶段"完整留在同一个文件里。第二参 true = 开逐 CALL 明细。
+    vm_trace_arm("StageDetail.on_create_room", true)
     vm_trace("json=" + string(_json_dir))
     vm_trace("bin=" + string(_bin_path) + " 存在=" + string(file_exists(_bin_path)))
     global._vm_bin_path = _bin_path

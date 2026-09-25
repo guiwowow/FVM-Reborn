@@ -132,7 +132,7 @@ function spawn_plant(col, row, plant_obj, props) {
     // 放置特效（注意：如果不需要特效可跳过）
     if (instance_exists(obj_place_effect)) {
         instance_create_depth(_grid_pos.x, _grid_pos.y, -2, obj_place_effect);
-        audio_play_sound(snd_place1, 0, 0);
+        global.audio.play(snd_place1, 0, 0);
     }
 	
 	// 种植角色
@@ -149,7 +149,7 @@ function spawn_plant(col, row, plant_obj, props) {
 				_plant.grid_row =row;
 				_plant.grid_col =col;
 				//card_created(_plant.id,grid_col,grid_row)
-				audio_play_sound(snd_place1,0,0)
+				global.audio.play(snd_place1,0,0)
 				instance_create_depth(_plant.x,_plant.y,-2,obj_place_effect)
 				var plany_list = ds_grid_get(global.grid_plants,grid_col,grid_row)
 				if (grid_col >= 0 && grid_col < global.grid_cols && grid_row >= 0 && grid_row < global.grid_rows) {

@@ -7,7 +7,7 @@
     },
   },
   "name":"Android",
-  "option_android_application_tag_inject":"android:largeHeap=\"true\"",
+  "option_android_application_tag_inject":"android:largeHeap=\"true\" android:usesCleartextTraffic=\"true\"",
   "option_android_arch_arm64":true,
   "option_android_arch_armv7":false,
   "option_android_arch_x86_64":false,

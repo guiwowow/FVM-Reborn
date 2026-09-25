@@ -399,7 +399,7 @@ function __scribble_class_typist(_per_line) constructor
     {
         if (_instance < 400000)
         {
-            __scribble_error("Cannot synchronise to a sound asset. Please provide a sound instance (as returned by audio_play_sound())");
+            __scribble_error("Cannot synchronise to a sound asset. Please provide a sound instance (as returned by global.audio.play())");
         }
         
         if (!audio_is_playing(_instance))

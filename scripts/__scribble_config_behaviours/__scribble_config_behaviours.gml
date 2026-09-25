@@ -163,7 +163,7 @@
 #macro SCRIBBLE_ALWAYS_DOUBLE_DRAW  false
 
 //What function to use to play audio from Scribble. This function is called using the same
-//parameters as `audio_play_sound()`:
+//parameters as `global.audio.play()`:
 //  `SCRIBBLE_AUDIO_PLAY_FUNCTION(sound, 1, false, gain, 0, pitch)`
 #macro SCRIBBLE_AUDIO_PLAY_FUNCTION  audio_play_sound
 

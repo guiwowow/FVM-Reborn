@@ -17,7 +17,18 @@ global.level_id = ""
 global.level_file = {}
 global.level_name = "曲奇岛"
 global.level_data = {}
+// ⚠️ 2026-09-22 测试期：临时打开调试模式（原值 0）；2026-09-24 出正式版，已关回 0。
+//    打开后额外给的是：战斗里 M=鼠标处召唤锯齿、N=召唤敌人、一键召唤本关 BOSS
+//    （obj_touch_control/Create_0.gml:41）、卡槽/落点调试信息、十字线校准缺失警告，
+//    以及 obj_battle/Draw_0 末尾那行「2x探测」状态（验证免回弹用）。
 global.debug = 0
+
+// 局域网地图源开关（与 global.debug 同款：藏在代码里，不用就置 0，没有任何对外 UI）。
+//   1 = 在线地图面板左上角出现「地图源」按钮，可填 192.168.x.x:8000，从局域网（PC 上跑
+//       的 tools/lan_map_server.py）下载实验室地图；
+//   0 = 该按钮不出现，且 map_api_base() 恒返回官网 kMapApiBase。
+//   ⚠️ 设备上以前存过的局域网地址**不会被清除**，只是被忽略 —— 以后想用置回 1 即可。
+global.lan_map_source = 0
 
 // ---- 地图脚本 VM / mod 卡系统（从联机版移植，2026-09-20）----------------
 // mod_enabled：工作目录下存在 mod_enable.txt 时才启用 Mod 卡系统。
@@ -39,7 +50,10 @@ global.game_version = "2.4.1.1"
 
 // 崩溃面包屑检查：上次运行若崩在半路（没写 OK end），这里把追踪内容弹出来。
 // 放在启动早期即可 —— 弹窗由 room_init 里的 obj_notice_controller 在 Draw 时渲染。
+// 崩溃面包屑：① 先检查上次（没销账就弹窗报出来）② 再武装本次会话。
+// 顺序不能反 —— 反过来会把上次留下的证据截断掉。
 vm_trace_check_on_launch()
+vm_trace_boot()
 
 // 随包内置的实验室关卡（datafiles/bundled_stages/ → 沙盒 laboratory/）
 // 在线下载暂时拿不到这些图时，用它验证地图脚本 VM 与 mod 插件。
@@ -159,6 +173,37 @@ for (var i = 0; i < array_length(global.keybind_config); i++) {
 }
 
 
+
+// ── 音效播放管理器配置（PC 侧 Issue #79 同步，见 安卓同步_音频管理器.md）──
+// 优先级：config.ini 里已有的值 > Music_Init.gml 里的默认值；默认值只在缺键时写入。
+global.audio.enable     = ini_read_bool("settings", "audio_opt_enable", true);
+global.audio.gap_ms     = ini_read_real("settings", "audio_snd_gap_ms", 20);   // 间隔地板 ms
+global.audio.gap_ratio  = ini_read_real("settings", "audio_gap_ratio", 0.25);  // 间隔 = 时长×该比例
+global.audio.gap_max    = ini_read_real("settings", "audio_gap_max", 400);     // 间隔上限 ms
+global.audio.same_max   = ini_read_real("settings", "audio_same_max", 8);      // 同音并发上限
+global.audio.duck       = ini_read_bool("settings", "audio_duck", true);       // 同音叠加增益
+global.audio.jitter     = ini_read_real("settings", "audio_jitter", 0.25);     // 间隔抖动 ±比例
+global.audio.density_ms = ini_read_real("settings", "audio_density_ms", 300);  // 增益密度窗口 ms
+global.audio.vary_pitch = ini_read_real("settings", "audio_vary_pitch", 0.06); // 音高随机 ±比例
+
+// 键缺失时补写默认值（只在缺键时写，绝不无条件覆盖）
+if (ini_read_string("settings", "audio_snd_gap_ms", "") == "") {
+    ini_write_bool("settings", "audio_opt_enable", true);
+    ini_write_real("settings", "audio_snd_gap_ms", 20);
+    ini_write_real("settings", "audio_same_max", 8);
+    ini_write_bool("settings", "audio_duck", true);
+}
+if (ini_read_string("settings", "audio_gap_ratio", "") == "") {
+    ini_write_real("settings", "audio_gap_ratio", 0.25);
+}
+if (ini_read_string("settings", "audio_gap_max", "") == "") {
+    ini_write_real("settings", "audio_gap_max", 400);
+}
+if (ini_read_string("settings", "audio_jitter", "") == "") {
+    ini_write_real("settings", "audio_jitter", 0.25);
+    ini_write_real("settings", "audio_density_ms", 300);
+    ini_write_real("settings", "audio_vary_pitch", 0.06);
+}
 
 ini_close();
 audio_group_set_gain(music,global.music_volume,0)

@@ -12,6 +12,11 @@ self.state = {
     search_box: undefined,
     /// @type {Asset.GMObject.Button}
     close_button: undefined,
+    /// @type {Asset.GMObject.Button}
+    source_button: undefined,
+    /// @type {Real}
+    /// get_string_async 的请求 id（-1 = 没有进行中的对话框）；同 SearchBox / obj_text_input
+    dialog_id: -1,
     /// @type {Asset.GMObject.OnlineStageDetail}
     detail: undefined,
     /// @type {function}
@@ -154,7 +159,7 @@ function open_detail(_item) {
             action_fn(_clicked)
         }))
     self.state.detail = _detail
-    request_json(kMapApiBase + "/api/items/" + _item.id, "GET", {kind: "detail", item_id: _item.id})
+    request_json(map_api_base() + "/api/items/" + _item.id, "GET", {kind: "detail", item_id: _item.id})
 }
 
 function handle_item_action(_item) {
@@ -217,12 +222,12 @@ function finish_download(_item, _dest) {
     var _json_count = self.state.manager.count_stage_jsons(_item.title)
     apply_downloaded_flag(_item)
     self.state.status_text = "已下载 " + _item.title + "（" + string(_json_count) + " 个关卡文件）"
-    request_json(kMapApiBase + "/api/map-download/" + _item.id, "POST", {kind: "download_count", item_id: _item.id})
+    request_json(map_api_base() + "/api/map-download/" + _item.id, "POST", {kind: "download_count", item_id: _item.id})
 }
 
 function request_list() {
     self.state.status_text = "正在获取地图列表…"
-    request_json(kMapApiBase + "/api/items", "GET", {kind: "list"})
+    request_json(map_api_base() + "/api/items", "GET", {kind: "list"})
 }
 
 function handle_http() {
@@ -362,6 +367,47 @@ function handle_http() {
     }
 }
 
+/// @description 弹出系统输入框填局域网地址（预填当前值；清空确定 = 切回官网）
+function open_source_dialog() {
+    if (!variable_global_exists("lan_map_source") || !global.lan_map_source) {
+        return   // 开关关掉（按钮本来也不存在，这里是双保险）
+    }
+    if (self.state.dialog_id != -1) {
+        return
+    }
+    var _prefill = "";
+    if (variable_global_exists("map_lan_base") && global.map_lan_base != "") {
+        _prefill = global.map_lan_base;
+    }
+    self.state.dialog_id = get_string_async("局域网地图源（如 192.168.31.10:8000）\n留空确定 = 切回官网", _prefill)
+}
+
+/// @description Async - Dialog 回调（eventType=7 / eventNum=63，见 Other_63.gml）
+/// 回调键：id=请求id、status=true=确定（false=取消）、result=输入串（空串=清空）
+function on_async_dialog() {
+    if (self.state.dialog_id == -1) {
+        return
+    }
+    var _fired_id   = (is_struct(async_load) ? async_load[$ "id"]     : async_load[? "id"])
+    var _fired_stat = (is_struct(async_load) ? async_load[$ "status"] : async_load[? "status"])
+    var _fired_res  = (is_struct(async_load) ? async_load[$ "result"] : async_load[? "result"])
+    // 不是我们发起的对话框（搜索框也在用同一个事件）⇒ 不动
+    if (!is_undefined(_fired_id) && _fired_id != self.state.dialog_id) {
+        return
+    }
+    self.state.dialog_id = -1
+    // status 缺失时保守按「确定」处理（同 obj_text_input 的策略）
+    if (!(is_undefined(_fired_stat) || (_fired_stat != 0 && _fired_stat != false))) {
+        return   // 取消 ⇒ 不改源
+    }
+    if (!is_string(_fired_res)) {
+        _fired_res = ""
+    }
+    map_source_save(_fired_res)
+    show_debug_message("[OnlineMap] 地图源切到: " + map_source_label())
+    request_list()   // 立刻按新源刷新列表
+}
+
 function do_close() {
     if (!is_undefined(self.state.on_close)) {
         self.state.on_close()
@@ -405,10 +451,28 @@ function create_widgets() {
             return is_undefined(gui_state.detail) || !instance_exists(gui_state.detail)
         }))
     self.state.search_box = _search_box
+
+    // 地图源切换（官网 ⇄ 局域网）：点一下弹系统输入框（get_string_async）。
+    // 填了地址 = 切局域网；**清空再确定** = 切回官网。当前生效的源画在 on_draw。
+    // 开关在 obj_game_init/Create_0.gml 的 global.lan_map_source。
+    // 与 map_api_base() 一致：**变量不存在也按「关」处理**（fail-safe，不再出现"闸关着按钮却在"）。
+    if (variable_global_exists("lan_map_source") && global.lan_map_source) {
+        /// @type {Asset.GMObject.Button}
+        var _source_button = instance_create_layer(0, 0, "Float", Button)
+        _source_button.set_sprite(spr_refresh_button)
+            .set_position(280, 55)
+            .set_scale(1.2)
+            .set_on_click(method(self, open_source_dialog))
+            .set_should_correspond(method({gui_state: self.state}, function() {
+                return is_undefined(gui_state.detail) || !instance_exists(gui_state.detail)
+            }))
+        self.state.source_button = _source_button
+    }
 }
 
 function on_create() {
     self.state.manager = new MapDownloadManager()
+    map_source_load()   // 读回记住的局域网源（没有文件 = 用官网）
     create_widgets()
     request_list()
 }
@@ -418,10 +482,18 @@ function on_step() {
 
 function on_draw() {
     // 安卓不烘焙 scribble 格式 → 回退 font_hei（同 StageDetail/StageItem 写法）
+    var _fmt = os_type == os_android ? "font_hei" : "font_hei_outline_4dir_black"
     scribble(self.state.status_text)
         .align(fa_left, fa_middle)
-        .starting_format(os_type == os_android ? "font_hei" : "font_hei_outline_4dir_black")
+        .starting_format(_fmt)
         .draw(820, 128)
+    // 当前地图源（左上按钮可切：填地址=局域网，清空=官网）—— 开关关掉时不画
+    if (variable_global_exists("lan_map_source") && global.lan_map_source) {
+        scribble("地图源：" + map_source_label())
+            .align(fa_left, fa_middle)
+            .starting_format(_fmt)
+            .draw(370, 62)
+    }
 }
 
 function on_cleanup() {
@@ -435,6 +507,9 @@ function on_cleanup() {
     }
     if (!is_undefined(self.state.close_button) && instance_exists(self.state.close_button)) {
         instance_destroy(self.state.close_button)
+    }
+    if (!is_undefined(self.state.source_button) && instance_exists(self.state.source_button)) {
+        instance_destroy(self.state.source_button)
     }
     if (!is_undefined(self.state.detail) && instance_exists(self.state.detail)) {
         instance_destroy(self.state.detail)

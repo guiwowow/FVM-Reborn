@@ -1,5 +1,94 @@
 ///
 #macro kMapApiBase "https://fvm-reb.top"
+#macro kMapSourceFile "map_source.txt"   // 记住局域网地图源（沙盒相对路径）
+
+// =====================================================================
+// 地图源：官网（kMapApiBase）⇄ 局域网（用户填的 IP:端口）
+// =====================================================================
+// 局域网那台机器上跑 `tools/lan_map_server.py`（随本功能提供，不在本仓库内），
+// 它按与官网**完全相同的 4 个接口**吐数据：
+//   GET  /api/items           → {"items":[ {id,title,...,image,map_file}, ... ]}
+//   GET  /api/items/{id}      → 单张详情（同上的对象）
+//   POST /api/map-download/{id} → {"downloads":N}
+//   GET  <map_file>/<image>   → zip / 缩略图本体
+// 所以游戏侧只需换 base，下载/解压/落盘/缩略图整条链路一行都不用改。
+
+/// 局域网源（已规范化，如 "http://192.168.31.10:8000"）；"" = 用官网
+global.map_lan_base = "";
+
+/// @description 把用户填的地址规范化成 base URL（缺协议补 http://，去掉尾部斜杠）
+///   接受：`192.168.31.10:8000` / `192.168.31.10` / `http://x.x.x.x:8000/`
+/// @param {String} _addr
+/// @returns {String}
+function map_lan_normalize(_addr) {
+    var _s = string_trim(string(_addr));
+    if (_s == "") {
+        return "";
+    }
+    if (!string_starts_with(_s, "http://") && !string_starts_with(_s, "https://")) {
+        _s = "http://" + _s;
+    }
+    while (string_length(_s) > 0 && string_copy(_s, string_length(_s), 1) == "/") {
+        _s = string_copy(_s, 1, string_length(_s) - 1);
+    }
+    return _s;
+}
+
+/// @description 当前生效的 base（局域网源非空则优先官网）
+/// @returns {String}
+function map_api_base() {
+    if (!variable_global_exists("map_lan_base")) {
+        global.map_lan_base = "";
+    }
+    // 开关关掉（或全局还没建，例如 obj_game_init 之前被调用）⇒ 恒用官网。
+    // 设备上存过的局域网地址原样留着，把开关置回 1 就复活。
+    if (!variable_global_exists("lan_map_source") || !global.lan_map_source) {
+        return kMapApiBase;
+    }
+    return (global.map_lan_base != "") ? global.map_lan_base : kMapApiBase;
+}
+
+/// @description 读回记住的局域网源（开面板时调用）
+function map_source_load() {
+    if (!variable_global_exists("map_lan_base")) {
+        global.map_lan_base = "";
+    }
+    if (!file_exists(kMapSourceFile)) {
+        return;
+    }
+    var _f = file_text_open_read(kMapSourceFile);
+    if (_f == -1) {
+        return;
+    }
+    var _s = "";
+    while (!file_text_eof(_f)) {
+        _s += file_text_read_string(_f);
+        file_text_readln(_f);
+    }
+    file_text_close(_f);
+    global.map_lan_base = map_lan_normalize(_s);
+}
+
+/// @description 记住局域网源；`_addr` 传空串 = 清掉、切回官网
+/// @param {String} _addr
+function map_source_save(_addr) {
+    global.map_lan_base = map_lan_normalize(_addr);
+    var _f = file_text_open_write(kMapSourceFile);
+    if (_f == -1) {
+        return;
+    }
+    file_text_write_string(_f, global.map_lan_base);
+    file_text_close(_f);
+}
+
+/// @description 给 UI 显示用的一句话
+/// @returns {String}
+function map_source_label() {
+    if (!variable_global_exists("map_lan_base")) {
+        global.map_lan_base = "";
+    }
+    return (global.map_lan_base == "") ? ("官网 " + kMapApiBase) : ("局域网 " + global.map_lan_base);
+}
 
 function OnlineMapItem() constructor {
     self.id = ""
@@ -894,7 +983,7 @@ function MapDownloadManager() constructor {
         if (!string_starts_with(_path, "/")) {
             _path = "/" + _path
         }
-        return kMapApiBase + _path
+        return map_api_base() + _path
     }
 
     /// @param {String} _map_file

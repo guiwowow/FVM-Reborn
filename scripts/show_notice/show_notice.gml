@@ -95,10 +95,19 @@ try {
                                // 在低分辨率下弧只有几段，圆角看着像「缺了几块」
 #macro NOTICE_GAP        12    // 多条通知同时在屏时的间距
 
+// 停留时长（2026-09-23 按用户要求）：关卡外常驻 2s、关卡内常驻 2.5s。
+// 这两个值是**下限** —— 调用方传更长（崩溃提示 600 / 倍速提示 180）时以调用方为准。
+#macro NOTICE_REST_MENU   120  // 关卡外：2.0s
+#macro NOTICE_REST_BATTLE 150  // 关卡内：2.5s
+#macro NOTICE_INPUT_GRACE  60  // 检测到屏幕输入后 1.0s 收起（仅关卡外生效）
+
 /// @description 在屏幕上显示通知（toast）
 /// @param {string} notice_text 通知文本
 /// @param {real} life 停留帧数（不含滑入滑出）
 function show_notice(notice_text, life) {
+    // 停留时长下限：关卡内 2.5s / 关卡外 2s（调用方传更长则听调用方的）
+    if (is_undefined(life)) life = 0;
+    life = max(life, instance_exists(obj_battle) ? NOTICE_REST_BATTLE : NOTICE_REST_MENU);
     var notice = {
         text: notice_text,
         life: life,
@@ -138,9 +147,16 @@ function show_notice(notice_text, life) {
 function update_notices() {
     if (!variable_global_exists("notice_list")) return;
     var _span = NOTICE_SLIDE_IN + NOTICE_SLIDE_OUT;
+    // 屏幕有输入 ⇒ 这条通知 1 秒后收起；关卡内**不受输入影响**（固定 2.5s）。
+    // 只在滑入完成后判定：弹出这条通知的那一下点击本身也是"输入"，
+    // 不排除的话它刚出现就被判成"有输入"，2s 常驻等于没有。
+    var _input = !instance_exists(obj_battle) && mouse_check_button_pressed(mb_left);
     for (var i = array_length(global.notice_list) - 1; i >= 0; i--) {
         var notice = global.notice_list[i];
         notice.frames++;
+        if (_input && notice.frames > NOTICE_SLIDE_IN) {
+            notice.life = min(notice.life, notice.frames + NOTICE_INPUT_GRACE);
+        }
         if (notice.frames > notice.life + _span) {
             array_delete(global.notice_list, i, 1);
             continue;

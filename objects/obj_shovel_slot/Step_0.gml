@@ -20,14 +20,14 @@ if (mouse_check_button_pressed(mb_left)) {
             // 安卓防误触：选中后锁帧，防止同一次按下的 pressed 立即触发铲除
             shovel_lock_frames = 0;
         }
-		audio_play_sound(snd_shovel,0,0)
+		global.audio.play(snd_shovel,0,0)
     }
 }
 if keyboard_check_pressed(slot_key){
 	if !is_selected{
 		select_shovel();
 		hotkey_pressed = true
-		audio_play_sound(snd_shovel,0,0)
+		global.audio.play(snd_shovel,0,0)
 	}
 	else{
 		deselect_shovel();
@@ -132,12 +132,12 @@ if ((is_selected && _dist > 200 && shovel_lock_frames <= 0) or (is_selected && g
 			}
 			if global.grid_terrains[logical_row][logical_col].type == "normal"{
 				instance_create_depth(logical_world.x + platform_shift_x,logical_world.y + platform_shift_y,-2,obj_place_effect)
-				audio_play_sound(snd_place2, 1, false);
+				global.audio.play(snd_place2, 1, false);
 			}
 			else if global.grid_terrains[logical_row][logical_col].type == "water"{
 				var inst = instance_create_depth(logical_world.x + platform_shift_x,logical_world.y + platform_shift_y + 20,-2500,obj_place_effect)
 				inst.sprite_index = spr_enter_water_effect
-				audio_play_sound(snd_enter_water,0,0)
+				global.audio.play(snd_enter_water,0,0)
 			}
             instance_destroy();
         }
@@ -153,12 +153,12 @@ if ((is_selected && _dist > 200 && shovel_lock_frames <= 0) or (is_selected && g
 		shovel_effect.sprite_index = shovel_spr
 		if global.grid_terrains[logical_row][logical_col].type == "normal"{
 				instance_create_depth(logical_world.x + platform_shift_x,logical_world.y + platform_shift_y,-2,obj_place_effect)
-				audio_play_sound(snd_place2, 1, false);
+				global.audio.play(snd_place2, 1, false);
 			}
 			else if global.grid_terrains[logical_row][logical_col].type == "water"{
 				var inst = instance_create_depth(logical_world.x + platform_shift_x,logical_world.y + platform_shift_y + 20,-2500,obj_place_effect)
 				inst.sprite_index = spr_enter_water_effect
-				audio_play_sound(snd_enter_water,0,0)
+				global.audio.play(snd_enter_water,0,0)
 			}
 		deselect_shovel()
         

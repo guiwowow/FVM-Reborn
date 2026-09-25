@@ -3,7 +3,7 @@
         // 停止可能存在的暂停实例
         audio_stop_sound(readyroom_music);
         // 从头开始播放新实例
-        audio_play_sound(readyroom_music, 0, 0);
+        global.audio.play(readyroom_music, 0, 0);
     }
 // 安卓适配：不加右键返回（安卓双击会被引擎合成为 mb_right，选卡界面双击查看卡片会误退）；返回键映射 vk_escape
 if keyboard_check_pressed(vk_escape){

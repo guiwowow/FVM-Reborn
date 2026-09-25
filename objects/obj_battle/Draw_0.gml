@@ -81,3 +81,17 @@ if (global.debug && variable_global_exists("painted_grid_missing") && array_leng
     draw_text(0, 90, "! GRID CALIB MISSING (run pvz/gen_calibration.py --write): " + _miss);
     draw_set_color(c_white);
 }
+
+// 2 倍速探测状态（仅调试模式 global.debug=1）：验证「免回弹」就看这一行
+//   瞬时FPS = 1000000/delta_time —— 判定用的就是它，不是上面那个 1 秒平滑的 fps
+//   状态 0=空闲 1=空转期 2=采样期 | 铁证=本关是否已跑出过 >=100 帧（是 ⇒ 本关内永不被撤回）
+if (global.debug) {
+    var _fps_now = (delta_time > 0) ? floor(1000000 / delta_time) : 0;
+    var _proven  = (variable_global_exists("speed_up_proven") && global.speed_up_proven) ? "是" : "否";
+    var _probe   = variable_global_exists("speed_up_probe_state") ? global.speed_up_probe_state : -1;
+    var _2x      = (variable_global_exists("speed_up_active") && global.speed_up_active) ? "开" : "关";
+    draw_set_color(c_yellow);
+    draw_text(0, 115, "2x探测: 瞬时FPS=" + string(_fps_now) + "  状态=" + string(_probe)
+                    + "  铁证=" + _proven + "  2x=" + _2x);
+    draw_set_color(c_white);
+}

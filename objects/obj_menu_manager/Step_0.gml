@@ -48,7 +48,8 @@ if keyboard_check_pressed(vk_escape){
 		obj_world_map_button.world_map = 0
 		global.gui_stack.pop()
 	}
-	else if instance_exists(obj_quit_confirm){
+	else if instance_exists(obj_quit_confirm){ vm_trace_end();   // 玩家主动确认退出 → 面包屑销账
+
 		game_end()
 	}
 	else{

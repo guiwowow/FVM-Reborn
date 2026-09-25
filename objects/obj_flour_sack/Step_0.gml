@@ -49,7 +49,7 @@ else{
 		delay = 65
 	}
 	if attack_timer == 1{
-		audio_play_sound(snd_flour_sack_find,0,0)
+		global.audio.play(snd_flour_sack_find,0,0)
 	}
 	if attack_timer <=delay{
 		attack_timer ++

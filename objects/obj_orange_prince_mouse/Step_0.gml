@@ -44,7 +44,7 @@ if state == ENEMY_STATE.ACTING{
 			}
 		}
 		if timer >= flash_speed * 10 or hp <= 0{
-			audio_play_sound(snd_enter_water,0,0)
+			global.audio.play(snd_enter_water,0,0)
 			state = ENEMY_STATE.NORMAL
 			sprite_index = spr_orange_prince_mouse_frog
 			if hp <= 0{
@@ -86,7 +86,7 @@ if state == ENEMY_STATE.ACTING{
 		}
 		
 		if timer >= flash_speed * 10 - 1 or hp <= 0{
-			audio_play_sound(snd_enter_water,0,0)
+			global.audio.play(snd_enter_water,0,0)
 			state = ENEMY_STATE.NORMAL
 			sprite_index = spr_orange_prince_mouse
 			move_anim = 10

@@ -19,12 +19,22 @@
 //    现在改为**持续监控**：只要 2x 开着，就不断开新窗口复检，
 //    面板中途被改回 60Hz 也会在 0.8s 内被自动撤回并提示。
 //
+// ⚠️ 防「误回弹」（2026-09-22 加）：设备一旦**跑出过 >=100 帧**（SPEED_UP_PROVEN_FPS），
+//    就证明面板确实能上 120 —— 此后**本关内不再回弹**。
+//    原因：卡顿、加载、切场景都可能让一整个窗口里没有快帧（delta_time 一大，窗口甚至一两帧就走完），
+//    但那只是"这一会儿慢"，不是"面板不支持" —— 设备能力一旦证明过就不会退化，此时撤回必然是误判。
+//    该铁证标记按**关卡**重置（obj_battle/Create_0），下一关重新凭实测证明。
+//
 // 判定用 delta_time（上一帧真实微秒数）自算**瞬时**帧率，不用 fps——
 // 后者是约 1 秒窗口的**平滑值**，探测刚开始读到的还是切换前的旧值（§25.7 记录的“振荡”根源）。
 
 #macro SPEED_UP_PROBE_WARMUP_US     400000    // 每个窗口开头忽略这么久（等面板切频；这期间慢帧不算反证）
 #macro SPEED_UP_PROBE_SAMPLE_US     400000    // 空转期后继续观察这么久，仍未见快帧才撤回
 #macro SPEED_UP_MIN_OK_FPS          70        // 达标帧率：>= 此值即证明面板能上 120
+// 「免回弹」铁证阈值（2026-09-22 加）：>= 此值即认定**这台设备确实能上 120**
+//   · 与 MIN_OK_FPS 分开：70 是"继续跑 2x"的门槛（宁可放过重负载设备），
+//     100 是"本关内永不回弹"的铁证 —— 60Hz 面板物理上给不出 10ms 帧，一帧就够。
+#macro SPEED_UP_PROVEN_FPS          100
 
 // 判定窗口总长 = WARMUP + SAMPLE = 0.8s。这是**撤回路径**的延时上限；
 // 通过路径有「提前通过」（见 tick），只要有**一帧**达标就立刻结束，通常远早于此。
@@ -61,13 +71,20 @@ function speed_up_probe_tick() {
         return;   // 空闲：没开 2x
     }
 
+    // ---- 本帧瞬时帧率（delta_time 自算，理由见文件头）----
+    var _fps_now = (delta_time > 0) ? (1000000 / delta_time) : 0;
+
+    // ---- 铁证：跑出过 >=100 帧 ⇒ 本关内不再回弹 ----
+    // 60Hz 面板物理上给不出 10ms 帧，所以哪怕只有一帧也足以证明面板能上 120。
+    if (_fps_now >= SPEED_UP_PROVEN_FPS) {
+        global.speed_up_proven = true;
+    }
+
     // ---- 提前通过：一帧达标就够（无需等窗口走满）----
-    if (delta_time > 0) {
-        if (1000000 / delta_time >= SPEED_UP_MIN_OK_FPS) {
-            global.speed_up_probe_state = 1;      // 重启窗口继续监控
-            global.speed_up_probe_left = SPEED_UP_PROBE_WARMUP_US;
-            return;
-        }
+    if (_fps_now >= SPEED_UP_MIN_OK_FPS) {
+        global.speed_up_probe_state = 1;      // 重启窗口继续监控
+        global.speed_up_probe_left = SPEED_UP_PROBE_WARMUP_US;
+        return;
     }
 
     global.speed_up_probe_left -= delta_time;
@@ -79,6 +96,14 @@ function speed_up_probe_tick() {
     if (global.speed_up_probe_state == 1) {
         global.speed_up_probe_state = 2;
         global.speed_up_probe_left = SPEED_UP_PROBE_SAMPLE_US;
+        return;
+    }
+
+    // ---- 本关内已被证明过（跑出过 >=100 帧）⇒ 只重启窗口，绝不回弹 ----
+    // 卡顿/加载/切场景都可能让整个窗口没有快帧，那是"这一会儿慢"，不是"面板不支持"。
+    if (variable_global_exists("speed_up_proven") && global.speed_up_proven) {
+        global.speed_up_probe_state = 1;
+        global.speed_up_probe_left = SPEED_UP_PROBE_WARMUP_US;
         return;
     }
 
@@ -184,4 +209,5 @@ function speed_up_init() {
     global.speed_up_probe_state = 0;      // 0=空闲 1=空转期 2=采样期
     global.speed_up_probe_left = 0;
     global.speed_up_retract_notified = false;
+    global.speed_up_proven = false;       // 「本关已证明能上 120」——进关卡时重置（见 obj_battle/Create_0）
 }

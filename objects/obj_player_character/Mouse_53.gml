@@ -21,7 +21,7 @@ if not is_placed{
 		grid_row = grid_pos.row
 		grid_col = grid_pos.col
 		card_created(id,grid_col,grid_row)
-		audio_play_sound(snd_place1,0,0)
+		global.audio.play(snd_place1,0,0)
 		instance_create_depth(x,y,-2,obj_place_effect)
 		var plany_list = ds_grid_get(global.grid_plants,grid_col,grid_row)
 		if global.grid_terrains[grid_row][grid_col].type == "water"{
