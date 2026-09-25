@@ -162,3 +162,121 @@ show_debug_message(working_directory)
 if (global.ime_block && native_disable_ime != undefined) {
     native_disable_ime(window_handle());
 }
+
+// ═══ 行锁定命中扫描 ═══════════════════════════════════════════════════════════
+// 三线酒架弹与水管弹只可能命中与自己同一行的敌人（原碰撞事件的守卫是
+// row == other.grid_row）。引擎的成对检测不做这个筛选，要拿每颗子弹跟场上全部敌人
+// 逐一比对，代价是【子弹数 × 敌人数】。这里改为每帧先把敌人按格子建一次索引，
+// 再对每颗子弹只在它那一行里取候选，对候选做与原来完全相同的 instance_place
+// 精确掩码判定。命中判定不变（同一个行条件、同一个 can_hit、同一套像素掩码），
+// 参与判定的敌人数量从全场降到一行，代价随子弹数线性增长、与敌人数无关。
+global.hu_cells = [];   // 格子桶：hu_cells[row * stride + col] = 该格的敌人 id 列表
+
+global.hit_util = {};
+
+/// @desc 按敌人【当前实际坐标】重建命中用格子。每帧一次。
+///       行键取敌人自己的 grid_row —— 取候选时用的也是它，两者同源才不会漏判。
+global.hit_util.build = function(){
+    var _stride = global.grid_cols + 2;
+    var _size   = global.grid_rows * _stride;
+    if (array_length(global.hu_cells) != _size){
+        global.hu_cells = array_create(_size);
+        for (var _i = 0; _i < _size; _i++){ global.hu_cells[_i] = []; }
+    } else {
+        for (var _i = 0; _i < _size; _i++){ array_resize(global.hu_cells[_i], 0); }
+    }
+    with (obj_enemy_parent){
+        if (hp > 0){
+            var _r = clamp(grid_row, 0, global.grid_rows - 1);
+            var _c = clamp(floor((x - global.grid_offset_x) / global.grid_cell_size_x), 0, _stride - 1);
+            array_push(global.hu_cells[_r * _stride + _c], id);
+        }
+    }
+};
+
+/// @func hit_util.scan(_b, _row, _ttype)
+/// @desc 返回子弹 _b 此刻会命中的敌人（实例 id），没有则 noone。
+///       只走子弹的 row 那一行，列窗口 ±2 覆盖掩码跨格与坐标舍入。
+global.hit_util.scan = function(_b, _row, _ttype){
+    var _hit = noone;
+    var _stride = global.grid_cols + 2;
+    var _r = clamp(_row, 0, global.grid_rows - 1);
+    with (_b){
+        // 内联 get_grid_position_from_world：它每次调用都新建一个 4 字段结构体，
+        // 而这里只用 col 一个整数，且是每颗子弹每帧一次。
+        var _c0 = floor((x - global.grid_offset_x) / global.grid_cell_size_x);
+        for (var _dc = -2; _dc <= 2 && _hit == noone; _dc++){
+            var _c = _c0 + _dc;
+            if (_c < 0 || _c >= _stride) continue;
+            var _list = global.hu_cells[_r * _stride + _c];
+            var _n = array_length(_list);
+            for (var _i = 0; _i < _n; _i++){
+                var _e = _list[_i];
+                if (!instance_exists(_e)) continue;
+                if (_e.hp <= 0) continue;
+                if (_e.grid_row != _row) continue;
+                if (!can_hit(_ttype, _e.target_type)) continue;
+                if (instance_place(x, y, _e) != _e) continue;   // 传实例 id：只对这一个实例做精确掩码判定
+                _hit = _e;
+                break;
+            }
+        }
+    }
+    return _hit;
+};
+
+// 三线酒架弹：伤害 + 特效（酒架与射手座各有对应特效精灵）+ 销毁
+global.hit_util.hit_winerack = function(_b, _e){
+    with (_b){
+        with (_e){
+            if (other.burnt == 1) audio_play_sound(snd_fire_hit,0,0);
+            else                  audio_play_sound(hit_sound,0,0);
+            damage_amount = other.damage;
+            damage_type   = other.damage_type;
+            event_user(0);
+        }
+        if (burnt == 0){
+            var inst = instance_create_depth(x, y, depth, obj_coffeecup_bullet_effect);
+            inst.sprite_index = spr_triplewinerack_bullet_effect;
+            if (sprite_index == spr_wine_rack_sagittarius_bullet)   inst.sprite_index = spr_wine_rack_sagittarius_bullet_effect;
+            if (sprite_index == spr_wine_rack_sagittarius_bullet_1) inst.sprite_index = spr_wine_rack_sagittarius_bullet_effect_1;
+        } else if (burnt == 1){
+            var inst = instance_create_depth(x+25, y, depth, obj_fire_bullet_effect);
+            inst.sprite_index = spr_fire_bullet_effect;
+        }
+        instance_destroy();
+    }
+};
+
+// 水管弹：伤害 + 特效 + 销毁
+global.hit_util.hit_waterpipe = function(_b, _e){
+    with (_b){
+        with (_e){
+            if (other.burnt == 1) audio_play_sound(snd_fire_hit,0,0);
+            else                  audio_play_sound(hit_sound,0,0);
+            damage_amount = other.damage;
+            damage_type   = other.damage_type;
+            event_user(0);
+        }
+        if (burnt == 0){
+            instance_create_depth(x, y, depth, obj_waterpipe_bullet_effect);
+        } else {
+            var inst = instance_create_depth(x+25, y, depth, obj_fire_bullet_effect);
+            inst.sprite_index = spr_fire_bullet_effect;
+        }
+        instance_destroy();
+    }
+};
+
+// 每帧 End Step 调一次（由 obj_battle/Step_2 触发）
+global.hit_util.resolve_all = function(){
+    global.hit_util.build();
+    with (obj_triplewinerack_bullet){
+        var _e = global.hit_util.scan(id, row, target_type);
+        if (_e != noone) global.hit_util.hit_winerack(id, _e);
+    }
+    with (obj_waterpipe_bullet){
+        var _e = global.hit_util.scan(id, row, target_type);
+        if (_e != noone) global.hit_util.hit_waterpipe(id, _e);
+    }
+};

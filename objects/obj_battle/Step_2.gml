@@ -61,3 +61,5 @@ if (!global.save_data.unlocked_items.elite_unlocked && current_wave >= global.le
 		audio_play_sound(snd_win,0,0)
 	}
 }
+// 行锁定命中扫描：三线酒架弹 / 水管弹的命中在这里结算（它们的敌碰撞事件已移除）
+if (!global.is_paused) global.hit_util.resolve_all();
