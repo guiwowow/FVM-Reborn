@@ -16,10 +16,10 @@
   "exportToGame":true,
   "extensionVersion":"1.0.0",
   "files":[
-    {"$GMExtensionFile":"","%Name":"ExitInfo.ext","ProxyFiles":[],"constants":[],"copyToTargets":8,"filename":"ExitInfo.ext","final":"","functions":[
-      {"$GMExtensionFunction":"","%Name":"exitinfo_last_reason","argCount":0,"args":[],"documentation":"","externalName":"getLastExitReason","help":"exitinfo_last_reason() 上一次进程退出原因码：2/4/5/6=崩溃，10=用户强杀(SwipeUpClean)，1=自己退出，-1=未知","hidden":false,"kind":4,"name":"exitinfo_last_reason","resourceType":"GMExtensionFunction","resourceVersion":"2.0","returnType":2,},
-      {"$GMExtensionFunction":"","%Name":"exitinfo_last_description","argCount":0,"args":[],"documentation":"","externalName":"getLastExitDescription","help":"exitinfo_last_description() 上一次退出的 description 原文（如 stop com.t10.game due to SwipeUpClean）","hidden":false,"kind":4,"name":"exitinfo_last_description","resourceType":"GMExtensionFunction","resourceVersion":"2.0","returnType":1,},
-    ],"init":"","kind":4,"name":"ExitInfo.ext","order":["exitinfo_last_reason","exitinfo_last_description",],"origname":"","resourceType":"GMExtensionFile","resourceVersion":"2.0","uncompress":false,"usesRunnerInterface":false,},
+    {"$GMExtensionFile":"v1","%Name":"ExitInfo.ext","constants":[],"copyToTargets":8,"filename":"ExitInfo.ext","final":"","functions":[
+        {"$GMExtensionFunction":"","%Name":"exitinfo_last_reason","argCount":0,"args":[],"documentation":"","externalName":"getLastExitReason","help":"exitinfo_last_reason() 上一次进程退出原因码：2/4/5/6=崩溃，10=用户强杀(SwipeUpClean)，1=自己退出，-1=未知","hidden":false,"kind":4,"name":"exitinfo_last_reason","resourceType":"GMExtensionFunction","resourceVersion":"2.0","returnType":2,},
+        {"$GMExtensionFunction":"","%Name":"exitinfo_last_description","argCount":0,"args":[],"documentation":"","externalName":"getLastExitDescription","help":"exitinfo_last_description() 上一次退出的 description 原文（如 stop com.t10.game due to SwipeUpClean）","hidden":false,"kind":4,"name":"exitinfo_last_description","resourceType":"GMExtensionFunction","resourceVersion":"2.0","returnType":1,},
+      ],"init":"","kind":4,"name":"ExitInfo.ext","origname":"","ProxyFiles":[],"resourceType":"GMExtensionFile","resourceVersion":"2.0","uncompress":false,"usesRunnerInterface":false,},
   ],
   "gradleinject":"",
   "hasConvertedCodeInjection":true,

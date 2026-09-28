@@ -5,6 +5,9 @@
     "ASTC":{
       "option_android_version":"2.4.1.1",
     },
+    "BC7":{
+      "option_android_version":"2.4.1",
+    },
   },
   "name":"Android",
   "option_android_application_tag_inject":"android:largeHeap=\"true\" android:usesCleartextTraffic=\"true\"",
