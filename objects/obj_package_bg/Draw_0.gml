@@ -200,7 +200,7 @@ if package_button_select == 1 {
 	draw_surface(package_surface,x-354-42,y-361-48)
     
     // 绘制悬停提示
-    if (hover_card_index != -1) {
+    if (hover_card_index != -1 && !instance_exists(obj_craft_bg)) {
         // 获取鼠标位置
         var tooltip_x = mouse_x + 15;
         var tooltip_y = mouse_y + 15;

@@ -87,30 +87,7 @@ if info_button_select == 1 {
     // 绘制悬停提示
     if (hover_card_index != -1) {
         // 获取鼠标位置
-        var tooltip_x = mouse_x + 15;
-        var tooltip_y = mouse_y - 15;
-		var row = hover_card_index div info_cols;
-        var col = hover_card_index mod info_cols;
-        
-        if (row < info_rows) {
-            var card_x = x - 1154 + col * 128*1.5;
-            var card_y = y - 265 + row * 142*1.5-y_offset;
-			//draw_sprite_ext(spr_info_island_select_box, 0, card_x, card_y, 1, 1, 0, c_white, 0.5)
-		}
-		
-        
-        // 绘制提示背景
-        draw_set_color(c_black);
-        draw_set_alpha(0.7);
-        draw_rectangle(tooltip_x - 5, tooltip_y - 5, 
-                      tooltip_x + 150, tooltip_y + 30, false);
-        
-        // 绘制提示文本
-		draw_set_halign(fa_left);
-		draw_set_valign(fa_top);
-        draw_set_alpha(1);
-        draw_set_color(c_white);
-        draw_text(tooltip_x, tooltip_y, "点击查看情报");
+        tooltip_set(mouse_x + 15, mouse_y - 15, "点击查看情报", 1);
     }
 	if select_card_index != -1{
 		//绘制右侧信息栏
@@ -223,30 +200,7 @@ else if info_button_select == 2 {
     // 绘制悬停提示
     if (hover_card_index != -1) {
         // 获取鼠标位置
-        var tooltip_x = mouse_x + 15;
-        var tooltip_y = mouse_y - 15;
-		var row = hover_card_index div info_cols;
-        var col = hover_card_index mod info_cols;
-        
-        if (row < info_rows) {
-            var card_x = x - 1154 + col * 128*1.5;
-            var card_y = y - 265 + row * 142*1.5-y_offset;
-			//draw_sprite_ext(spr_info_island_select_box, 0, card_x, card_y, 1, 1, 0, c_white, 0.5)
-		}
-		
-        
-        // 绘制提示背景
-        draw_set_color(c_black);
-        draw_set_alpha(0.7);
-        draw_rectangle(tooltip_x - 5, tooltip_y - 5, 
-                      tooltip_x + 150, tooltip_y + 30, false);
-        
-        // 绘制提示文本
-		draw_set_halign(fa_left);
-		draw_set_valign(fa_top);
-        draw_set_alpha(1);
-        draw_set_color(c_white);
-        draw_text(tooltip_x, tooltip_y, "点击查看情报");
+        tooltip_set(mouse_x + 15, mouse_y - 15, "点击查看情报", 1);
     }
 	if select_card_index != -1{
 		//绘制右侧信息栏
@@ -349,30 +303,7 @@ else if info_button_select == 3 {
     // 绘制悬停提示
     if (hover_card_index != -1) {
         // 获取鼠标位置
-        var tooltip_x = mouse_x + 15;
-        var tooltip_y = mouse_y - 15;
-		var row = hover_card_index div info_cols;
-        var col = hover_card_index mod info_cols;
-        
-        if (row < info_rows) {
-            var card_x = x - 1154 + col * 128*1.5;
-            var card_y = y - 265 + row * 142*1.5-y_offset;
-			//draw_sprite_ext(spr_info_island_select_box, 0, card_x, card_y, 1, 1, 0, c_white, 0.5)
-		}
-		
-        
-        // 绘制提示背景
-        draw_set_color(c_black);
-        draw_set_alpha(0.7);
-        draw_rectangle(tooltip_x - 5, tooltip_y - 5, 
-                      tooltip_x + 150, tooltip_y + 30, false);
-        
-        // 绘制提示文本
-		draw_set_halign(fa_left);
-		draw_set_valign(fa_top);
-        draw_set_alpha(1);
-        draw_set_color(c_white);
-        draw_text(tooltip_x, tooltip_y, "点击查看情报");
+        tooltip_set(mouse_x + 15, mouse_y - 15, "点击查看情报", 1);
     }
 	if select_card_index != -1{
 		//绘制右侧信息栏
@@ -454,3 +385,6 @@ if (scroll_max > 0) {
 draw_set_halign(fa_left);
 draw_set_valign(fa_top);
 draw_set_alpha(1);
+
+// 提示框：推进尺寸/消失动画并绘制（每帧一次）
+tooltip_draw();

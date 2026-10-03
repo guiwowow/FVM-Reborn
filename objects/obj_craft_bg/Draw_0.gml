@@ -101,27 +101,8 @@ if button_select == 0{
 	//绘制悬停提示
 	if (hover_card_index != -1) {
         
-		draw_set_font(font_yuan)
-        // 获取鼠标位置
-        var tooltip_x = mouse_x - 15;
-        var tooltip_y = mouse_y - 15;
-            
-		// 获取提示文本
-        var tooltip_text = "点击将卡片放入强化槽"
-        
-			
-        // 绘制提示背景
-        draw_set_color(c_black);
-        draw_set_alpha(0.7);
-        draw_rectangle(tooltip_x - string_width(tooltip_text) - 5, tooltip_y - 5, 
-                        tooltip_x +5, tooltip_y + string_height(tooltip_text)+5, false);
-		//绘制提示文本
-		draw_set_halign(fa_left);
-        draw_set_valign(fa_top);
-        draw_set_alpha(1);
-        draw_set_color(c_white);
-		draw_set_font(font_yuan)
-		draw_text(tooltip_x- string_width(tooltip_text), tooltip_y, tooltip_text);
+		draw_set_font(font_yuan);
+			tooltip_set(mouse_x - 15, mouse_y - 15, "点击将卡片放入强化槽", -1);
 			
             
     }
@@ -285,31 +266,9 @@ else if button_select == 1{
         
         if (!is_undefined(weapon_data)) {
 			draw_set_font(font_yuan)
-            // 获取鼠标位置
-            var tooltip_x = mouse_x - 15;
-            var tooltip_y = mouse_y - 15;
-            
-			// 获取提示文本
-            
-            var tooltip_text = weapon_data.name
-            var is_equipped = is_weapon_equipped(weapon_id);
-            
-            var slot = get_weapon_slot(weapon_id);
-            tooltip_text += "\n点击将宝石放入强化槽"
-            
-			
-            // 绘制提示背景
-            draw_set_color(c_black);
-            draw_set_alpha(0.7);
-            draw_rectangle(tooltip_x - string_width(tooltip_text) - 5, tooltip_y - 5, 
-                          tooltip_x +5, tooltip_y + string_height(tooltip_text)+5, false);
-			//绘制提示文本
-			draw_set_halign(fa_left);
-            draw_set_valign(fa_top);
-            draw_set_alpha(1);
-            draw_set_color(c_white);
-			draw_set_font(font_yuan)
-			draw_text(tooltip_x- string_width(tooltip_text), tooltip_y, tooltip_text);
+            var tooltip_text = weapon_data.name + "\n点击将宝石放入强化槽";
+            	draw_set_font(font_yuan);
+            	tooltip_set(mouse_x - 15, mouse_y - 15, tooltip_text, -1);
 			
             
         }
@@ -362,3 +321,6 @@ else if button_select == 1{
 		}
 	}
 }
+
+// 提示框：推进尺寸/消失动画并绘制（每帧一次）
+tooltip_draw();

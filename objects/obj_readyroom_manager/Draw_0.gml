@@ -138,7 +138,7 @@ for(var i = 0 ; i < slot_rows ; i++){
 }
 draw_surface(slot_surface,x-25+803-42,y+ 375-48)
 {// 绘制悬停提示
-    if (hover_card_index != -1 && !is_submenu_open) {
+    if (hover_card_index != -1 && !is_submenu_open && !instance_exists(obj_package_bg)) {
     	var card_id = global.player_deck[| hover_card_index*2];
     	var deck_entry = global.player_deck[| hover_card_index*2+1];
     	var card_data_shapes = deck_entry[? "shapes"]
@@ -356,7 +356,7 @@ for(var i = deck_first_slot_index; i < deck_first_slot_index+11;i++){
 		}
 	}
 	//打开关卡详情位置检测
-	if(mouse_x > 785 && mouse_x < 1546 && mouse_y > 762 && mouse_y < 980) && !is_submenu_open{
+	if (mouse_x > 785 && mouse_x < 1546 && mouse_y > 762 && mouse_y < 980 && !is_submenu_open && !instance_exists(obj_package_bg)) {
 		draw_set_alpha(0.5)
 		draw_set_colour(c_white)
 		draw_roundrect(785,762,1546,980,0)
