@@ -138,7 +138,7 @@ function draw_audio_page(){
 	    var slider_max_x = x + 280;
 	    var slider_y = y - 135;
     
-	    // 创建音乐滑块
+// 创建音乐滑块
 	    var slider_music = instance_create_depth(slider_min_x, slider_y, depth-1, obj_volume_slider);
 	    slider_music.volume_type = "music";
 	    slider_music.min_x = slider_min_x;
@@ -218,3 +218,16 @@ function draw_controls_page(){
 	}
 }
 
+
+// ── 难度切换动画：检测 global.difficulty 变化并推进计时（与 Draw_0 case 3 的滑出/滑入配套）──
+if (global.difficulty != diff_shown) {
+    diff_anim_from = diff_shown;
+    diff_shown     = global.difficulty;
+    diff_anim_t    = 0;
+    var _d4        = (diff_shown - diff_anim_from + 4) mod 4;
+    diff_anim_dir  = (_d4 == 1) ? 1 : -1;   // 1 = 下一级（新图从右侧进）；其余（含 3→0 回绕）当上一级
+}
+if (diff_anim_t >= 0) {
+    diff_anim_t++;
+    if (diff_anim_t >= diff_anim_frames) diff_anim_t = -1;
+}

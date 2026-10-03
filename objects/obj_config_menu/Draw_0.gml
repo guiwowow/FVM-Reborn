@@ -35,7 +35,41 @@ switch (button_select) {
 		//draw_set_halign(fa_left);
 		//draw_set_valign(fa_top);
 		draw_sprite(spr_option_menu_text,2,x-120,y+60)
-		draw_sprite_ext(spr_option_menu_difficulty,global.difficulty,x+15,y+102,0.2,0.2,0,c_white,1)
+		// 难度等级名：平时静态绘制；切换时旧名向一侧滑出、新名从另一侧滑入，超出卡片内边距的部分裁掉
+		if (diff_anim_t < 0) {
+			draw_sprite_ext(spr_option_menu_difficulty, global.difficulty, x+15, y+102, 0.2, 0.2, 0, c_white, 1)
+		} else {
+			var _sc    = 0.2;                                                   // 与静态绘制一致的缩放
+			var _sw    = sprite_get_width(spr_option_menu_difficulty);           // 原始像素宽
+			var _sh    = sprite_get_height(spr_option_menu_difficulty);          // 原始像素高
+			var _ox    = sprite_get_xoffset(spr_option_menu_difficulty) * _sc;   // 原点换算到屏幕
+			var _oy    = sprite_get_yoffset(spr_option_menu_difficulty) * _sc;
+			var _win   = _sw * _sc + diff_anim_pad * 2;      // 裁剪窗口宽 = 等级名 + 两侧内边距
+			var _left0 = x + 15 - _ox;                       // 静止时等级名的视觉左边界
+			var _w1    = _left0 - diff_anim_pad;             // 窗口左边界（右边界 = _w1 + _win）
+			var _top   = y + 102 - _oy;
+			var _p     = diff_anim_t / diff_anim_frames;
+			var _e     = 1 - (1 - _p) * (1 - _p) * (1 - _p); // 非线性缓动：ease-out（起步快、收尾慢）
+			var _shift = _win * _e;
+			var _dxf   = -diff_anim_dir * _shift;            // 旧名的位移
+			var _dxt   =  diff_anim_dir * (_win - _shift);   // 新名的位移（dir=1 时自右侧进）
+			// 旧名
+			var _lft = x + 15 + _dxf - _ox;
+			var _vl  = max(_w1, _lft);
+			var _vr  = min(_w1 + _win, _lft + _sw * _sc);
+			if (_vr > _vl) {
+				draw_sprite_part_ext(spr_option_menu_difficulty, diff_anim_from,
+					(_vl - _lft) / _sc, 0, (_vr - _vl) / _sc, _sh, _vl, _top, _sc, _sc, c_white, 1);
+			}
+			// 新名
+			_lft = x + 15 + _dxt - _ox;
+			_vl  = max(_w1, _lft);
+			_vr  = min(_w1 + _win, _lft + _sw * _sc);
+			if (_vr > _vl) {
+				draw_sprite_part_ext(spr_option_menu_difficulty, diff_shown,
+					(_vl - _lft) / _sc, 0, (_vr - _vl) / _sc, _sh, _vl, _top, _sc, _sc, c_white, 1);
+			}
+		}
 		break
     
     // 可以添加其他设置页面
