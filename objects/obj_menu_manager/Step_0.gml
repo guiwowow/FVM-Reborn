@@ -57,3 +57,9 @@ if keyboard_check_pressed(vk_escape){
 }
 
 pre_load_texture()
+
+// 加载完成后的收尾动画计时（黑滤镜淡出 + LOGO 下移淡出）
+if (outro_t >= 0) {
+	outro_t++;
+	if (outro_t > outro_frames) outro_t = -1;   // 跑满即彻底不再绘制
+}
