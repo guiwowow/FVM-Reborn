@@ -207,18 +207,8 @@ if package_button_select == 1 {
 		
 		var tooltip_text = "左键点击调节卡片\n右键点击查看情报"
         
-        // 绘制提示背景
-        draw_set_color(c_black);
-        draw_set_alpha(0.7);
-        draw_rectangle(tooltip_x - 5, tooltip_y - 5, 
-                      tooltip_x + string_width(tooltip_text)+5, tooltip_y + string_height(tooltip_text)+5, false);
-        
-        // 绘制提示文本
-		draw_set_halign(fa_left);
-		draw_set_valign(fa_top);
-        draw_set_alpha(1);
-        draw_set_color(c_white);
-        draw_text(tooltip_x, tooltip_y, tooltip_text);
+		// 悬浮提示：切换物品时框尺寸非线性过渡（tooltip_set / tooltip_draw）
+		tooltip_set(tooltip_x, tooltip_y, tooltip_text, 1);
     }
 }
 else if package_button_select == 2 {
@@ -360,17 +350,8 @@ else if package_button_select == 2 {
                 tooltip_text = weapon_data.description + "\n左键点击装备"
             }
 			
-            // 绘制提示背景
-            draw_set_color(c_black);
-            draw_set_alpha(0.7);
-            draw_rectangle(tooltip_x - string_width(tooltip_text) - 5, tooltip_y - 5, 
-                          tooltip_x +5, tooltip_y + string_height(tooltip_text)+5, false);
-			//绘制提示文本
-			draw_set_halign(fa_left);
-            draw_set_valign(fa_top);
-            draw_set_alpha(1);
-            draw_set_color(c_white);
-			draw_text(tooltip_x- string_width(tooltip_text), tooltip_y, tooltip_text);
+		// 悬浮提示：切换物品时框尺寸非线性过渡（tooltip_set / tooltip_draw）
+		tooltip_set(tooltip_x, tooltip_y, tooltip_text, -1);
 			
             
         }
@@ -395,17 +376,8 @@ else if package_button_select == 2 {
                 tooltip_text = weapon_data.description + "\n左键点击镶嵌\n右键点击编辑"
             }
 			
-            // 绘制提示背景
-            draw_set_color(c_black);
-            draw_set_alpha(0.7);
-            draw_rectangle(tooltip_x - string_width(tooltip_text)- 5, tooltip_y - 5, 
-                          tooltip_x +5, tooltip_y + string_height(tooltip_text)+5, false);
-			//绘制提示文本
-			draw_set_halign(fa_left);
-            draw_set_valign(fa_top);
-            draw_set_alpha(1);
-            draw_set_color(c_white);
-			draw_text(tooltip_x- string_width(tooltip_text), tooltip_y, tooltip_text);
+		// 悬浮提示：切换物品时框尺寸非线性过渡（tooltip_set / tooltip_draw）
+		tooltip_set(tooltip_x, tooltip_y, tooltip_text, -1);
 			
             
         }
@@ -496,16 +468,8 @@ else if package_button_select == 3{
 			
             // 绘制提示背景
 			draw_set_font(font_yuan)
-            draw_set_color(c_black);
-            draw_set_alpha(0.7);
-            draw_rectangle(tooltip_x - string_width(tooltip_text) - 5, tooltip_y - 5, 
-                          tooltip_x +5, tooltip_y + string_height(tooltip_text)+5, false);
-			//绘制提示文本
-			draw_set_halign(fa_left);
-            draw_set_valign(fa_top);
-            draw_set_alpha(1);
-            draw_set_color(c_white);
-			draw_text(tooltip_x- string_width(tooltip_text), tooltip_y, tooltip_text);
+		// 悬浮提示：切换物品时框尺寸非线性过渡（tooltip_set / tooltip_draw）
+		tooltip_set(tooltip_x, tooltip_y, tooltip_text, -1);
 			
             
         }
@@ -516,3 +480,6 @@ else if package_button_select == 3{
 draw_set_halign(fa_left);
 draw_set_valign(fa_top);
 draw_set_alpha(1);
+
+// 悬浮提示框统一在最上层绘制（含 0.2s 宽限与淡出）
+tooltip_draw();
