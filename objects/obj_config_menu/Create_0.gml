@@ -45,3 +45,12 @@ function create_keybind_buttons(){
 	    array_push(setting_buttons, btn);
 	}
 }
+
+// 难度切换动画（点左右箭头时，等级名在卡片容器里滑出/滑入）
+diff_shown       = global.difficulty;  // 当前应显示的那一帧（动画的"上一帧"）
+diff_anim_from   = global.difficulty;  // 正在离开的那一帧
+diff_anim_t      = -1;                 // -1 = 无动画；>=0 = 动画进行到第几帧
+diff_anim_frames = 18;                 // 时长（帧），60fps ≈ 0.3s
+diff_anim_dir    = 1;                  // 1 = 下一级（新图从右侧进）；-1 = 上一级（从左侧进）
+diff_anim_pad    = 52;                 // 裁剪窗口比等级名左右各宽多少。实测定标：容器 = spr_option_menu_text 帧2 的日芒卡片（371x157，边框约 8px → 内区约 360 宽），等级名画出来 244.8 宽 → 每侧约 55，取 52 略收在边框里侧（88 会溢出到卡片外）
+global.vol_intro_p = -1;           // 音量条入场动画进度：-1 = 无动画，0..1 = 播放中
