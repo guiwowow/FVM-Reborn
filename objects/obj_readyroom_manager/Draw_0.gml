@@ -392,19 +392,3 @@ draw_set_halign(fa_right);
 draw_set_valign(fa_bottom);
 draw_set_font(font_yuan)
 draw_text(1820,1080,"按ESC退出")
-
-// ===== 安卓：双指滑动提示（配套 Step_0 的双指滚动；PC 走 os_windows 不显示）=====
-// 位置/文案/大小全部在 Create_0.gml 的 hint_two_finger_* 变量里改
-if (os_type != os_windows && hint_two_finger_enable && !is_submenu_open) {
-	draw_set_font(font_yuan)
-	draw_set_colour(hint_two_finger_colour)
-	draw_set_alpha(hint_two_finger_alpha)
-	draw_set_halign(hint_two_finger_align)
-	draw_set_valign(fa_middle)
-	draw_text_transformed(hint_two_finger_x, hint_two_finger_y, hint_two_finger_text, hint_two_finger_scale, hint_two_finger_scale, 0)
-	// 复位，免得影响同房间其它对象的绘制状态
-	draw_set_alpha(1)
-	draw_set_colour(c_white)
-	draw_set_halign(fa_left)
-	draw_set_valign(fa_top)
-}

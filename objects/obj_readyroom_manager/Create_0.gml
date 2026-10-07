@@ -71,13 +71,3 @@ for(var i = 0;i < global.level_file.total_waves;i ++){
 second_touch_y_prev = 0;
 second_touch_active = false;
 
-// ===== 安卓：双指滑动提示（配套 Step_0 的双指滚动；PC 有真滚轮，不显示）=====
-// 想改这行字的位置 / 文案 / 大小，只改下面这几行就行，不用动 Draw_0
-hint_two_finger_enable = true;                       // false = 完全不显示
-hint_two_finger_text   = "双指上下滑动可翻看卡片";     // 要显示的文案
-hint_two_finger_x      = 1262;                       // 基准点屏幕 X（1262 = 卡池水平中心）
-hint_two_finger_y      = 35;                         // 基准点屏幕 Y（45 = 屏幕顶端，与关卡名同一行；改这个数即上下移动）
-hint_two_finger_align  = fa_center;                  // 横向对齐：fa_left / fa_center / fa_right
-hint_two_finger_scale  = 1.0;                        // 1.0 = 与界面其它文字同大小
-hint_two_finger_alpha  = 0.85;                       // 文字透明度 0~1
-hint_two_finger_colour = c_white;                    // 文字颜色

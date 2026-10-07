@@ -306,8 +306,8 @@ function apply_two_finger_scroll() {
     if (os_type == os_windows) {
         return
     }
-    var _mx = device_mouse_x(1)
-    var _my = device_mouse_y(1)
+    var _mx = device_mouse_x(0)
+    var _my = device_mouse_y(0)
     // 第二指必须在列表视口内
     if (!point_in_rectangle(
         _mx, _my,
@@ -317,13 +317,17 @@ function apply_two_finger_scroll() {
         self.state.second_touch_active = false
         return
     }
-    var _second_down = device_mouse_check_button(1, mb_left)
+    // touch slop：位移没过阈值不算滑动（与两指→单指改造同一套判定）
+    var _second_down = device_mouse_check_button(0, mb_left) && global.touch_dragged
     if (_second_down) {
         if (self.state.second_touch_active) {
             var _dy = _my - self.state.second_touch_y_prev
             if (_dy != 0) {
-                self.state.scroll_target_y += _dy * self.state.two_finger_scale
+                // 方向已反转（2026-10-01 移动端手感）：手指下移 = 内容下移
+                self.state.scroll_target_y -= _dy * self.state.two_finger_scale
                 clamp_scroll_bounds()
+                // 单指滚动：滚动时刷新点击屏蔽冷却（防松手误触）
+                global.two_finger_cooldown = SLOWMO_TWO_FINGER_COOLDOWN
             }
         }
         self.state.second_touch_y_prev = _my

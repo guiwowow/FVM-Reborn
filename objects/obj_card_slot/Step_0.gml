@@ -60,8 +60,18 @@ if (is_hovered) {
     hover_alpha = 0
 }
 
-// 检测鼠标点击（选中卡槽）；双指手势中屏蔽，防误触
-if (is_ready && mouse_check_button_pressed(mb_left) && !two_finger_gesture_active()) {
+// 触摸判定（2026-10-02 标准 touch slop 模型）—— ⚠️ 必须按"是否在战斗内"分流：
+//   · 战斗内（instance_exists(obj_battle)）：沿用"按下即选中"。**局内拖动放置依赖它** ——
+//     按下选卡 → 拖到地格 → 松手放置（放置结算在下面 is_selected 块里的 mouse_check_button_released）。
+//     曾误按"选卡界面专属"处理（改成抬起/长按才选中），结果一拖动就超 slop ⇒ 永远选不中 ⇒ 局内拖放全废。
+//   · 局外（选卡界面）：抬起判点击 / 长按拾取，避免卡池滚动与拾卡互相误触。
+var _in_battle   = instance_exists(obj_battle);
+var _touch_press = mouse_check_button_pressed(mb_left);
+var _touch_tap   = mouse_check_button_released(mb_left) && !global.touch_dragged;
+var _touch_hold  = (!global.touch_dragged && global.touch_press_frames == TOUCH_LONGPRESS_FRAMES);
+var _touch_pick  = _in_battle ? _touch_press : (_touch_tap || _touch_hold);
+if (is_ready && _touch_pick && !two_finger_gesture_active()) {
+    if (!_in_battle && _touch_hold) global.touch_item_drag = true;
     mx = mouse_x;
     my = mouse_y;
     

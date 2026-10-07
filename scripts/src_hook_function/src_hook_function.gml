@@ -87,10 +87,13 @@ function instance_destroy_define() {
 		}
 	}
 
+	// YYC 严格性修复（2026-10-01）：instance_destroy 没有返回值，
+	// `return <void 调用>` 在 YYC 下报 "No return value from expression"（VM 容忍）。
+	// 改成先调用再退出；调用方本来也拿不到返回值，行为等价。
 	switch (argument_count) {
-		case 0:  return instance_destroy_origfunc();
-		case 1:  return instance_destroy_origfunc(argument[0]);
-		case 2:  return instance_destroy_origfunc(argument[0], argument[1]);
+		case 0:  instance_destroy_origfunc(); break;
+		case 1:  instance_destroy_origfunc(argument[0]); break;
+		case 2:  instance_destroy_origfunc(argument[0], argument[1]); break;
+		default: instance_destroy_origfunc(); break;
 	}
-	return instance_destroy_origfunc();
 }

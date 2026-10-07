@@ -94,6 +94,7 @@ try {
 #macro NOTICE_RADIUS     14    // 圆角半径。必须显式给值 —— draw_roundrect 的默认半径
                                // 在低分辨率下弧只有几段，圆角看着像「缺了几块」
 #macro NOTICE_GAP        12    // 多条通知同时在屏时的间距
+#macro NOTICE_SCALE      1.15  // 整体放大倍数（2026-10-02 按用户要求：面板/文字/圆角/阴影一起放大）
 
 // 停留时长（2026-09-23 按用户要求）：关卡外常驻 2s、关卡内常驻 2.5s。
 // 这两个值是**下限** —— 调用方传更长（崩溃提示 600 / 倍速提示 180）时以调用方为准。
@@ -189,6 +190,7 @@ function draw_notices() {
             global._VM_notice_scale = -1;
         }
         if (_scale <= 0) _scale = 1.0;
+        _scale *= NOTICE_SCALE;   // 整体放大（VM 指定过缩放时也跟着放大 1.15 倍，保持一致）
 
         // 单行测量（2026-09-21 修「文字不在框中间」）：
         // 原来用 string_height_ext(_text, 90, ...) + draw_text_ext_transformed(..., 90, ...)，
@@ -201,17 +203,23 @@ function draw_notices() {
             _tw = _maxw;
         }
         var _th = string_height(_text) * _scale;
-        var _pw = _tw + NOTICE_PAD_X * 2;
-        var _ph = _th + NOTICE_PAD_Y * 2;
+        var _pw = _tw + NOTICE_PAD_X * 2 * NOTICE_SCALE;
+        var _ph = _th + NOTICE_PAD_Y * 2 * NOTICE_SCALE;
 
         // 动画进度 _t：0 = 完全在屏幕顶部之外，1 = 落位
+        // 2026-10-02 按用户要求改成非线性：滑入三次缓出（进来快、落位慢），滑回三次缓入（起步慢、离场快）。
+        // 用乘法展开而不是 power()，少一次函数调用（toast 每帧都在算）。
         var _t;
+        var _p;
         if (notice.frames <= NOTICE_SLIDE_IN) {
-            _t = notice.frames / NOTICE_SLIDE_IN;          // 滑入：线性（2026-09-21 按用户要求从 ease-out 改回）
+            _p = notice.frames / NOTICE_SLIDE_IN;
+            var _q = 1 - _p;
+            _t = 1 - _q * _q * _q;                          // ease-out cubic
         } else if (notice.frames <= NOTICE_SLIDE_IN + notice.life) {
             _t = 1;                                        // 停留
         } else {
-            _t = 1 - (notice.frames - NOTICE_SLIDE_IN - notice.life) / NOTICE_SLIDE_OUT;   // 原路滑回
+            _p = (notice.frames - NOTICE_SLIDE_IN - notice.life) / NOTICE_SLIDE_OUT;
+            _t = 1 - _p * _p * _p;                          // ease-in cubic（原路滑回）
         }
         _t = clamp(_t, 0, 1);
         // 完全收起（_t 到底）就整条不画：否则面板顶边算下来仍可能残留几个像素贴在屏幕顶端
@@ -228,16 +236,18 @@ function draw_notices() {
         //   只判 _t<=0 不够 —— 滑入/滑出的中间帧本来就会"只露几像素"，
         //   一旦 frames 因任何原因卡在那一帧，屏幕上就永远挂着一条细边。
         //   这里按最终坐标判，跟动画进度、房间高度、面板宽度全都无关。
-        if (_y2 < NOTICE_PAD_Y) continue;
+        if (_y2 < NOTICE_PAD_Y * NOTICE_SCALE) continue;
 
         // 面板：白底 + 黑色边框 + 底部阴影（2026-09-21 按用户要求改）
         // 用 draw_roundrect_ext 显式给半径：默认半径在低分辨率下弧只有几段，
         // 圆角看起来像「缺了几块」；半径变大后弧的段数随之增加，圆角才顺。
-        var _rad = NOTICE_RADIUS;
+        var _rad = NOTICE_RADIUS * NOTICE_SCALE;
+        var _sh  = 3 * NOTICE_SCALE;
+        var _sv  = 5 * NOTICE_SCALE;
         // ① 底部阴影：整体右下偏移的半透明黑圆角块，先画 → 被面板盖住上半，只在下方/右侧露出
         draw_set_alpha(0.30);
         draw_set_color(c_black);
-        draw_roundrect_ext(_x1 + 3, _y1 + 5, _x2 + 3, _y2 + 5, _rad, _rad, false);
+        draw_roundrect_ext(_x1 + _sh, _y1 + _sv, _x2 + _sh, _y2 + _sv, _rad, _rad, false);
         // ② 面板本体：白底
         draw_set_alpha(1);
         draw_set_color(make_color_rgb(246, 246, 248));

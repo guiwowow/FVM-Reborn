@@ -135,7 +135,7 @@ if (!file_exists("config.ini")) {
 	ini_write_bool("settings", "borderless_window", true);
 	ini_write_real("settings", "save_slot", 0)
 	ini_write_bool("settings", "lose_focus_pause", true)
-	ini_write_bool("settings", "cardslow_enabled", true)
+	ini_write_bool("settings", "cardslow_enabled", false)
 	ini_write_bool("settings", "slowmo_overlay", true)
 	ini_open("config.ini");
     for (var i = 0; i < array_length(global.keybind_config); i++) {
@@ -164,7 +164,8 @@ global.difficulty = ini_read_real("settings", "difficulty", 1)
 global.borderless_window = ini_read_bool("settings", "borderless_window", true);
 global.save_slot = ini_read_real("settings", "save_slot", 0)
 global.lose_focus_pause = ini_read_bool("settings", "lose_focus_pause", true);
-global.cardslow_enabled = ini_read_bool("settings", "cardslow_enabled", true);
+// 缓时模块已下线（2026-10-06）：无视 ini 里的历史值，强制关闭
+global.cardslow_enabled = false;
 global.slowmo_overlay = ini_read_bool("settings", "slowmo_overlay", true);
 for (var i = 0; i < array_length(global.keybind_config); i++) {
 	    var kb = global.keybind_config[i];

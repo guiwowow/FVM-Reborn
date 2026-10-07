@@ -57,12 +57,6 @@ if (os_type != os_windows) {
             }
         }
     }
-    // 屏幕左下加速按钮上方区域点击 = 选卡缓时开关（战斗专属）
-    if (mouse_check_button_pressed(mb_left)) {
-        if (mouse_x < 130 && mouse_y > room_height - 390 && mouse_y < room_height - 260) {
-            global.cardslow_enabled = !global.cardslow_enabled;
-        }
-    }
     // 屏幕左下 缓时按钮上方区域点击 = 调试：一键召唤本关 BOSS（仅 global.debug 模式 + 战斗内）
     if (global.debug && instance_exists(obj_battle) && mouse_check_button_pressed(mb_left)) {
         if (mouse_x < 130 && mouse_y > room_height - 520 && mouse_y < room_height - 390) {
@@ -80,10 +74,40 @@ global.game_frame = (global.game_frame + 1) mod 12;
 if (!variable_global_exists("two_finger_cooldown")) {
     global.two_finger_cooldown = 0;
 }
-if (device_mouse_check_button(1, mb_left)) {
-    global.two_finger_cooldown = SLOWMO_TWO_FINGER_COOLDOWN;
-} else if (global.two_finger_cooldown > 0) {
+// 单指滚动模式（2026-10-01）：刷新改由滚动动作本身做（见 scripts/two_finger_scroll 与 GridList），
+// 这里只负责每帧递减。原写法"第二指按住就刷新"在单指模式下会永久屏蔽所有点击。
+if (global.two_finger_cooldown > 0) {
     global.two_finger_cooldown -= 1;
+}
+
+// ── 单指手势状态：touch slop 模型（2026-10-02）──
+// 手机 APP 通用判定：按下后位移超过 TOUCH_SLOP_PX ⇒ 本次手势判为"滑动"（不再结算点击）；
+// 没超过阈值就抬起 ⇒ 判为"点击"；按住不动到 TOUCH_LONGPRESS_FRAMES ⇒ 允许"长按拾取"。
+// 放在这里是因为本对象每帧必跑（depth 最大 = 最先执行），各点击处理读到的是本帧值。
+if (!variable_global_exists("touch_press_frames")) {
+    global.touch_press_frames = 0;
+    global.touch_start_x      = 0;
+    global.touch_start_y      = 0;
+    global.touch_dragged      = false;
+    global.touch_item_drag    = false;   // 拖卡中：由 obj_card_slot 置位，此处只在抬起时清
+}
+if (mouse_check_button(mb_left)) {
+    if (global.touch_press_frames == 0) {
+        // 按下那一帧：记起点、清判定
+        global.touch_start_x = device_mouse_x(0);
+        global.touch_start_y = device_mouse_y(0);
+        global.touch_dragged = false;
+        global.touch_item_drag = false;
+    }
+    global.touch_press_frames += 1;
+    if (point_distance(global.touch_start_x, global.touch_start_y,
+                       device_mouse_x(0), device_mouse_y(0)) > TOUCH_SLOP_PX) {
+        global.touch_dragged = true;
+    }
+} else {
+    // 抬起：touch_dragged 保留到这一帧（点击结算发生在抬起帧），只清帧数与拖卡标志
+    global.touch_press_frames = 0;
+    global.touch_item_drag = false;
 }
 if (instance_exists(obj_battle)) {
     var _slow_selected = false;

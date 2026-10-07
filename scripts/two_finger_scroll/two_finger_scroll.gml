@@ -1,4 +1,8 @@
 #macro SLOWMO_TWO_FINGER_COOLDOWN 12
+// 触摸判定（touch slop 模型，2026-10-02）：位移超过 TOUCH_SLOP_PX ⇒ 本次手势算"滑动"，
+// 期间与之后的点击一律不结算；没超过就抬起 ⇒ 算"点击"。TOUCH_LONGPRESS_FRAMES = 长按拾取阈值。
+#macro TOUCH_SLOP_PX 20
+#macro TOUCH_LONGPRESS_FRAMES 15
 
 /// @function two_finger_gesture_active()
 /// @description 当前是否处于「双指手势」状态 → 供各处点击处理**屏蔽单指点击**，防误触。
@@ -17,12 +21,13 @@ function two_finger_gesture_active() {
     if (os_type == os_windows) {
         return false;
     }
-    // 只读判定：冷却值的刷新与递减由 obj_touch_control/Step_0 每帧统一驱动
-    // （那里每帧必跑 → 实例被销毁也不会卡住屏蔽）
+    // 单指滚动模式（2026-10-01）：不再用「第二指按住」判定 —— 那会把所有单指点击都屏蔽掉，
+    // 单指模式下整个界面会失去响应。改为只看滚动冷却：由滚动动作本身刷新（每滚一格刷一次），
+    // 递减仍由 obj_touch_control/Step_0 每帧统一驱动（那里每帧必跑 → 实例被销毁也不会卡住）。
     if (variable_global_exists("two_finger_cooldown") && global.two_finger_cooldown > 0) {
         return true;
     }
-    return device_mouse_check_button(1, mb_left);
+    return false;
 }
 
 /// @description 安卓「双指滑动替代滚轮」共享实现（B6 重构：原 4 处内联复制收敛到这里）
@@ -53,15 +58,33 @@ function two_finger_scroll(_px_per_step, _on_step) {
     if (os_type == os_windows) {
         return false;
     }
+    // 滑动闸口（2026-10-02 标准 touch slop 模型，替换掉上一版"长按才滚"的错误做法）：
+    //   · 位移没超过 TOUCH_SLOP_PX ⇒ 还不算滑动（这段留给点击/长按拾取）
+    //   · global.touch_item_drag（正在拖卡）⇒ 本次手势归拖卡，列表不滚
+    if (!variable_global_exists("touch_dragged") || !global.touch_dragged
+        || (variable_global_exists("touch_item_drag") && global.touch_item_drag)) {
+        second_touch_active = false;
+        second_touch_y_prev = device_mouse_y(0);
+        return false;
+    }
+    // 兜底初始化（2026-10-01 单指化后必须加）：调用方约定是在 Create 里初始化这两个变量，
+    // 但 obj_info_island_bg 漏了（背包/选卡也有隐患）。旧双指代码只在"第二指按住"时才**读**它们，
+    // 所以没暴露；改单指后，点击创建面板的那一帧手指还按着 → 立刻读到未定义变量 → GAME 自退
+    // （退出原因码 1 = EXIT_SELF、logcat 干净，与手册 §31.1 记录的那类症状一致）。
+    if (!variable_instance_exists(id, "second_touch_active")) {
+        second_touch_active = false;
+        second_touch_y_prev = 0;
+    }
     var _has_acc = variable_instance_exists(id, "two_finger_accum");
-    if (!device_mouse_check_button(1, mb_left)) {
+    // 单指滚动（2026-10-01）：用第 0 根手指（= 鼠标轴，安卓上就是唯一那根）替代第 1 根
+    if (!device_mouse_check_button(0, mb_left)) {
         second_touch_active = false;
         if (_has_acc) {
             two_finger_accum = 0;
         }
         return false;
     }
-    var _sy = device_mouse_y(1);
+    var _sy = device_mouse_y(0);
     var _did = false;
     if (second_touch_active) {
         var _dy = _sy - second_touch_y_prev;
@@ -72,7 +95,7 @@ function two_finger_scroll(_px_per_step, _on_step) {
                 if (_steps > 0) {
                     var _dir = sign(two_finger_accum);
                     for (var _i = 0; _i < _steps; _i++) {
-                        _on_step(_dir > 0);
+                        _on_step(_dir < 0);
                         _did = true;
                     }
                     two_finger_accum -= _dir * _steps * _px_per_step;
@@ -80,7 +103,7 @@ function two_finger_scroll(_px_per_step, _on_step) {
             } else {
                 var _steps = abs(_dy) div _px_per_step;
                 for (var _i = 0; _i < _steps; _i++) {
-                    _on_step(_dy > 0);
+                    _on_step(_dy < 0);
                     _did = true;
                 }
             }
@@ -88,5 +111,10 @@ function two_finger_scroll(_px_per_step, _on_step) {
     }
     second_touch_y_prev = _sy;
     second_touch_active = true;
+    // 滚动时刷新"点击屏蔽"冷却：松手后若干帧内不响应单指点击，防误触。
+    // （原双指方案靠"第二指按住"判定，单指模式改由滚动动作本身刷新）
+    if (_did) {
+        global.two_finger_cooldown = SLOWMO_TWO_FINGER_COOLDOWN;
+    }
     return _did;
 }
