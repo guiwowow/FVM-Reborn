@@ -16,6 +16,16 @@ if (os_type != os_windows) {
     _last_frame_time = current_time;
 }
 
+// ── 场景过渡推进 BUGFIX 2026-10-07（黑屏根因）─────────────────────────────
+// PR#93 的 panel_anim/GuiStack 框架里 room_transition_start() 只负责"开始淡出"，
+// 真正执行换房的 room_transition_step() 全树没有任何调用点（上游 PR#93 漏了宿主）。
+// 后果：gui_stack.to(room_menu) 之后 _tr.mode 永远停在 1、t 永远为 0，
+//       room_goto(room_menu) 永不执行 ⇒ 游戏卡在空房间 room_init（该房间被
+//       obj_notice_controller 的 draw_clear(c_black) 每帧涂黑）= 纯黑、无 UI、无声音。
+// 本对象 persistent = true、depth = 1000000（Step 最先执行）且跨房间常驻，是最稳的宿主。
+// room_transition_step 内部有 `if (_tr.frame == current_time) return` 同帧守卫，重复调用无害。
+room_transition_step();
+
 // 2 倍速支持性实测：推进探测窗口（必须在压帧之后，fps 才反映真实节拍）
 // 见 scripts/speed_up_control/speed_up_control.gml 的 speed_up_probe_tick()
 speed_up_probe_tick();
