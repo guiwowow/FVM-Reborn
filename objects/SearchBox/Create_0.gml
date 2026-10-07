@@ -7,6 +7,7 @@ self.state = {
     text: "",
     placeholder: "搜索名称或作者",
     focused: false,
+    hovered: false,
     cursor_visible: true,
     cursor_timer: 0,
     /// @type {Real}
@@ -88,6 +89,7 @@ function blur() {
         return
     }
     self.state.focused = false
+    // 同上：交给 obj_file_manager 统一处理。
 }
 
 function contains_point(_mx, _my) {
@@ -98,7 +100,31 @@ function contains_point(_mx, _my) {
         self.state.top + self.state.height)
 }
 
+function is_hovered() {
+    return self.state.hovered
+}
+
+function update_hover() {
+    var _was_hovered = self.state.hovered
+    var _over = false
+    if (visible && self.state.should_correspond()) {
+        var _mx = device_mouse_x_to_gui(0)
+        var _my = device_mouse_y_to_gui(0)
+        _over = contains_point(_mx, _my)
+    }
+    self.state.hovered = _over
+    if (_over) {
+        window_set_cursor(cr_beam)
+    } else if (_was_hovered) {
+        window_set_cursor(cr_arrow)
+    }
+}
+
 function on_create() {
+}
+
+function on_begin_step() {
+    update_hover()
 }
 
 function on_step() {
@@ -110,6 +136,9 @@ function on_step() {
             blur()
         }
         exit
+    }
+    if (self.state.hovered) {
+        window_set_cursor(cr_beam)
     }
 
     if (mouse_check_button_pressed(mb_left)) {
@@ -204,17 +233,19 @@ function on_draw() {
     // 唯一创建 font_hei_outline_4dir_black 的 scribble_font_bake_outline_4dir(:99) 永远执行不到），
     // 故安卓回退到真实字体资源 font_hei；与 StageDetail/StageItem 的既有写法一致。
     var _color_name = os_type == os_android ? "font_hei" : "font_hei_outline_4dir_black"
-    if (_label == "") {
+    if (_label == "" && !_s.focused) {
         scribble(_s.placeholder)
             .align(fa_left, fa_middle)
             .starting_format(_color_name)
             .blend(c_gray, 1)
             .draw(_s.left + 12, _s.top + _s.height * 0.5)
     } else {
-        scribble(_label)
-            .align(fa_left, fa_middle)
-            .starting_format(_color_name)
-            .draw(_s.left + 12, _s.top + _s.height * 0.5)
+        if (_label != "") {
+            scribble(_label)
+                .align(fa_left, fa_middle)
+                .starting_format(_color_name)
+                .draw(_s.left + 12, _s.top + _s.height * 0.5)
+        }
         if (_s.focused && _s.cursor_visible) {
             var _tw = string_width(_label)
             draw_set_color(c_black)

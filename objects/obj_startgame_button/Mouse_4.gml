@@ -1,4 +1,4 @@
-if obj_player_info_ui.menu_type == 0 and global.preloaded{
+if on_click and obj_player_info_ui.menu_type == 0 and global.preloaded{
 	global.audio.play(snd_button,0,0)
 	global.gui_stack.to(room_map)
 	global.map_name = "美味岛"

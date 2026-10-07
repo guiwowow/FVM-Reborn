@@ -132,6 +132,13 @@ function LaboratoryManager() constructor {
         }
     }
 
+    /// @param {String} _json_path
+    /// @returns {Bool}
+    static is_online_cache_path = function(_json_path) {
+        var _normalized = string_replace_all(string(_json_path), "\\", "/")
+        return string_pos("/" + kCustomStageFolder + "/cache/", "/" + _normalized) > 0
+    }
+
     /// @returns {Struct.Result} 
     static load_all_stages = function() {
         var error_message = ""
@@ -145,9 +152,7 @@ function LaboratoryManager() constructor {
         }
         for (var i = 0; i < array_length(_json_path_list); i++) {
             var _json_path = _json_path_list[i]
-            // 跳过联机地图缓存目录（laboratory/cache/），其中的 json 是地图元数据而非关卡定义
-            // （对齐联机版 origin/main 的同名改动）
-            if (string_pos("/" + kCustomStageFolder + "/cache/", "/" + string_replace_all(string(_json_path), "\\", "/")) > 0) {
+            if (self.is_online_cache_path(_json_path)) {
                 continue
             }
             var _result = self._load_stage(_json_path)

@@ -4,3 +4,4 @@ vm_trace("[结束] Game End 事件")
 save_file(global.save_slot)
 
 global.laboratory_manager.dispose()
+

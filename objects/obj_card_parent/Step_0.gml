@@ -60,8 +60,8 @@ if state != CARD_STATE.SLEEP && instance_exists(banding_sleep_obj){
 var grid_pos = get_grid_position_from_world(x,y)
 
 if !(variable_instance_exists(id, "platform_grid_lock") && platform_grid_lock) {
-    grid_col = grid_pos.col
-    grid_row = grid_pos.row
+    grid_col = clamp(grid_pos.col,0,global.grid_cols-1)
+    grid_row = clamp(grid_pos.row,0,global.grid_rows-1)
 }
 
 // -1 列卡片（左边缘外的传送带/召唤位）：col 是负数或超出列数时按环绕列算深度，

@@ -150,6 +150,40 @@ global.sound_volume_before_mute = 0.7;
 
 // 读取配置到全局变量
 ini_open("config.ini");
+
+// 音效播放管理器配置（Issue #79）：全项目音效统一走 global.audio.play，见 scripts/Music_Init
+// ⚠️ 必须在 ini_open / ini_close 区间内读取，否则会报 INI 文件未定义。
+// ⚠️ 优先级：config.ini 里已有的值 > 这里的默认值（默认值只在 ini 缺键时才写入）。
+//    所以改 scripts/Music_Init 里的默认值对已有配置无效 —— 要么直接改 config.ini，
+//    要么把 config.ini 里对应的 audio_* 行删掉，让这里重新写一遍。
+global.audio.enable     = ini_read_bool("settings", "audio_opt_enable", true);
+global.audio.gap_ms     = ini_read_real("settings", "audio_snd_gap_ms", 20);   // 同一音效最小间隔ms（地板）
+global.audio.gap_ratio  = ini_read_real("settings", "audio_gap_ratio", 0.25);  // 间隔 = 音效时长×该比例
+global.audio.gap_max    = ini_read_real("settings", "audio_gap_max", 400);     // 间隔上限ms
+global.audio.same_max   = ini_read_real("settings", "audio_same_max", 8);      // 同音并发上限
+global.audio.duck       = ini_read_bool("settings", "audio_duck", true);       // 同音叠加增益
+global.audio.jitter     = ini_read_real("settings", "audio_jitter", 0.25);     // 间隔抖动 ±比例
+global.audio.density_ms = ini_read_real("settings", "audio_density_ms", 300);  // 增益密度窗口ms
+global.audio.vary_pitch = ini_read_real("settings", "audio_vary_pitch", 0.06); // 音高随机 ±比例
+// 键缺失时补写默认值，玩家可直接手改 config.ini
+if (ini_read_string("settings", "audio_snd_gap_ms", "") == "") {
+    ini_write_bool("settings", "audio_opt_enable", true);
+    ini_write_real("settings", "audio_snd_gap_ms", 20);
+    ini_write_real("settings", "audio_same_max", 8);
+    ini_write_bool("settings", "audio_duck", true);
+}
+if (ini_read_string("settings", "audio_gap_ratio", "") == "") {
+    ini_write_real("settings", "audio_gap_ratio", 0.25);
+}
+if (ini_read_string("settings", "audio_gap_max", "") == "") {
+    ini_write_real("settings", "audio_gap_max", 400);
+}
+if (ini_read_string("settings", "audio_jitter", "") == "") {
+    ini_write_real("settings", "audio_jitter", 0.25);
+    ini_write_real("settings", "audio_density_ms", 300);
+    ini_write_real("settings", "audio_vary_pitch", 0.06);
+}
+
 global.screen_shake = ini_read_bool("settings", "screen_shake", true);
 global.screen_flash = ini_read_bool("settings", "screen_flash", true);
 global.fullscreen = ini_read_bool("settings", "fullscreen", false);
@@ -167,6 +201,11 @@ global.lose_focus_pause = ini_read_bool("settings", "lose_focus_pause", true);
 // 缓时模块已下线（2026-10-06）：无视 ini 里的历史值，强制关闭
 global.cardslow_enabled = false;
 global.slowmo_overlay = ini_read_bool("settings", "slowmo_overlay", true);
+global.ime_block = ini_read_bool("settings", "ime_block", true); // 输入法屏蔽开关（个别输入法环境异常时可关）
+// 兼容旧配置：键缺失时补写
+if (ini_read_string("settings", "ime_block", "") == "") {
+    ini_write_bool("settings", "ime_block", true);
+}
 for (var i = 0; i < array_length(global.keybind_config); i++) {
 	    var kb = global.keybind_config[i];
 	    var key_val = ini_read_real("keybinds", kb.name, kb.default1);
