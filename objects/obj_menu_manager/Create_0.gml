@@ -1,4 +1,5 @@
 global.menu_screen = true
+vm_trace("[menu] Create 起")
 
 depth = -1200
 
@@ -16,6 +17,7 @@ instance_create_depth(100,0,-2,obj_player_info_ui)
 var _entrance_list = instance_create_depth(0, 0, -2, EventEntranceList)
 _entrance_list.set_position(600,20)
               .set_size(900, 300)
+vm_trace("[menu] EventEntranceList ok")
 
 
 if not instance_exists(obj_menu_music_controller){
@@ -26,6 +28,7 @@ if not instance_exists(obj_world_map_button){
 	instance_create_depth(1670,80,0,obj_world_map_button)
 }
 instance_create_depth(room_width-210,room_height,-1,obj_player_menu_bg)
+vm_trace("[menu] 基础 UI ok")
 timer = 0
 
 /// @description preload textures
@@ -67,6 +70,9 @@ if !global.preloaded{
 }
 
 function after_texture_load() {
+    // 诊断面包屑（最多 3 条）：卡在音频等待时能看到重复的 after_texture_load
+    if (!variable_global_exists("_menu_after_n")) { global._menu_after_n = 0 }
+    if (global._menu_after_n < 3) { global._menu_after_n += 1; vm_trace("[menu] after_texture_load 第 " + string(global._menu_after_n) + " 次（音频 music=" + string(audio_group_is_loaded(music)) + " sound=" + string(audio_group_is_loaded(sound)) + "）") }
     // 安卓/移动端：等待音频组异步加载完成（防首次播放音频卡顿），未就绪下一帧重试
     if (os_type != os_windows) {
         if (!audio_group_is_loaded(music) || !audio_group_is_loaded(sound)) {
@@ -134,6 +140,7 @@ function prewarm_step() {
 
 function pre_load_texture() {
     if (global.preloaded) return;
+	vm_trace("[menu] prefetch " + string(self.texture_loaded) + "/" + string(self.texture_count))
 	
 	obj_player_info_ui.menu_type = 4
 	obj_world_map_button.world_map = 2

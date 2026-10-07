@@ -55,6 +55,28 @@ global.game_version = "2.4.1.1"
 vm_trace_check_on_launch()
 vm_trace_boot()
 
+// ── 未捕获异常接管（2026-10-07 加）──────────────────────────────────────────
+// 安卓 release 包拿不到 logcat，GM 默认的错误弹窗在 release 里也可能直接 exit
+// （真机 ApplicationExitInfo 实测 reason=1 EXIT_SELF）⇒ 崩了只有"下次启动的面包屑弹窗"
+// 这一条线索，而面包屑只记到房间级（[room=room_menu]），定不了位。
+// 这里把 GM 的异常结构（message/longMessage/script/stacktrace）原文写进 vm_trace.txt，
+// 下次启动弹窗就会把出错脚本与堆栈直接打出来。
+function fvm_exception_report(_exc) {
+    var _txt = "";
+    try { _txt += "[EXC] message: " + string(_exc.message) + "\n"; } catch (_e1) { _txt += "[EXC] message: <read failed>\n"; }
+    try { _txt += "[EXC] long: " + string(_exc.longMessage) + "\n"; } catch (_e2) {}
+    try { _txt += "[EXC] script: " + string(_exc.script) + "\n"; } catch (_e3) {}
+    try { _txt += "[EXC] stack: " + string(_exc.stacktrace) + "\n"; } catch (_e4) {}
+    try {
+        var _f = file_text_open_append(VM_TRACE_FILE);
+        if (_f >= 0) {
+            file_text_write_string(_f, _txt);
+            file_text_close(_f);
+        }
+    } catch (_e5) {}
+}
+try { exception_unhandled_handler(fvm_exception_report); } catch (_e0) {}
+
 // 随包内置的实验室关卡（datafiles/bundled_stages/ → 沙盒 laboratory/）
 // 在线下载暂时拿不到这些图时，用它验证地图脚本 VM 与 mod 插件。
 // 只拷沙盒里还没有的，不覆盖玩家自己下载/改过的同名文件。
