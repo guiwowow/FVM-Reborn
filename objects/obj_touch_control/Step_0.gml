@@ -127,7 +127,8 @@ if (instance_exists(obj_battle)) {
     with (obj_shovel_slot) {
         if (is_selected) _slow_selected = true;
     }
-    global.slowmo_active = global.cardslow_enabled && !global.is_paused && _slow_selected;
+    // 缓时特效并入动效等级（2026-10-07）：动效等级「关闭」时不触发缓时与其画面特效
+    global.slowmo_active = ui_anim_on(1) && global.cardslow_enabled && !global.is_paused && _slow_selected;
 } else {
     global.slowmo_active = false;
 }

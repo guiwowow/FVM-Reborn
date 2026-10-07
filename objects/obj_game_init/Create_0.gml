@@ -158,7 +158,6 @@ if (!file_exists("config.ini")) {
 	ini_write_real("settings", "save_slot", 0)
 	ini_write_bool("settings", "lose_focus_pause", true)
 	ini_write_bool("settings", "cardslow_enabled", false)
-	ini_write_bool("settings", "slowmo_overlay", true)
 	ini_open("config.ini");
     for (var i = 0; i < array_length(global.keybind_config); i++) {
         var kb = global.keybind_config[i];
@@ -222,7 +221,8 @@ global.save_slot = ini_read_real("settings", "save_slot", 0)
 global.lose_focus_pause = ini_read_bool("settings", "lose_focus_pause", true);
 // 缓时模块已下线（2026-10-06）：无视 ini 里的历史值，强制关闭
 global.cardslow_enabled = false;
-global.slowmo_overlay = ini_read_bool("settings", "slowmo_overlay", true);
+  // 缓时特效已并入「动效等级」（2026-10-07）：不再读 slowmo_overlay 开关，
+  // 特效是否出现由 ui_anim_on(1)（动效等级 >= 基础）决定 —— 见 obj_slowmo_overlay/Step_0.gml
 global.ime_block = ini_read_bool("settings", "ime_block", true); // 输入法屏蔽开关（个别输入法环境异常时可关）
 // 兼容旧配置：键缺失时补写
 if (ini_read_string("settings", "ime_block", "") == "") {

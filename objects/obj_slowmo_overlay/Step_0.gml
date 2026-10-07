@@ -4,7 +4,7 @@
 /// 缓时只负责放慢战斗世界，不该把过场动画也一起拖慢。
 /// global.slowmo_active 由 obj_touch_control（depth 1000000，Step 最先执行）本帧写入，
 /// 本对象 depth -1100 后执行 → 读到的一定是本帧最新值。
-var _target = (global.slowmo_overlay && global.slowmo_active && !global.is_paused) ? 1 : 0;
+var _target = (ui_anim_on(1) && global.slowmo_active && !global.is_paused) ? 1 : 0;   // 缓时特效已并入动效等级：关闭档不出特效
 
 if (_target > overlay_a) {
     overlay_a = min(overlay_a + SLOWMO_OVERLAY_FADE_IN, 1);

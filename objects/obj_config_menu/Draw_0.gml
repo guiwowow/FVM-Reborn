@@ -49,18 +49,7 @@ switch (button_select) {
 		//draw_set_halign(fa_left);
 		//draw_set_valign(fa_top);
 		draw_sprite(spr_option_menu_text,1,x-360,y+30)
-		// 第 6 个开关「缓时视觉」的标签 —— 前 5 个标签烘焙在 spr_option_menu_text 图里（没有第 6 个）。
-		//
-		// 位置 x-359 / y+330 是实测的：
-		//   精灵 1001x510、原点 (500,255)、由 draw_sprite(...,1,x-360,y+30) 画到房间
-		//   → 房间x = x - 860 + 精灵x，房间y = y - 225 + 精灵y
-		//   5 个烘焙标签的列中心都是精灵 x≈501 → 房间 x-359；行距 100px，标签中心 == 开关中心
-		//
-		// 为什么用独立精灵而不是 draw_text_transformed：
-		//   font_yuan 只有 size 16，靠 1.52 倍缩放凑出来的字，补不出烘焙图的 6px 深蓝描边与立体投影，
-		//   用户实测反馈「确实小了」。spr_slowmo_label 是照烘焙标签的配色/描边/挤出重做的
-		//   （134x43，origin = Middle Centre，textureGroup = UI），画在这个坐标即自动对齐 —— 见手册 §23.4a。
-		draw_sprite(spr_slowmo_label, 0, x - 359, y + 330);
+		// （第 6 行「缓时视觉」标签已随该开关一起删除，2026-10-07：与动效分级滑块重叠）
 
 		// ── 动效分级：三档滑块（左→右 = 关闭 / 基础 / 完全，档位即 global.ui_anim）──
 		var _sy   = y + ui_anim_slider_dy;          // 第 6 行（上面五行开关在 y-170..y+230，同 100 间距）
