@@ -44,9 +44,9 @@
 /// 注：必须放在 **script 资源** 里才是真全局函数；写在对象事件里会变成该实例的方法，
 /// 其它对象调用会报 "Variable <obj>.slowmo_gate(...) not set before reading it"（2026-09-15 踩过）。
 function slowmo_gate() {
-    // ⚠️ 缓时模块已下线（2026-10-06 用户要求）：闸口直接放行，不再跳任何逻辑帧。
-    // 506 处调用点**故意保留**为空转（省掉一次大改），要彻底铲掉再逐个删 `if (slowmo_gate()) exit;`。
-    return false;
+    // 2026-10-07 恢复：2026-10-06 曾在此直接 `return false;` 把整个缓时模块下线
+    // （战斗内「缓时:开/关」按钮同时被删）。现在闸口恢复原逻辑；缓时是否触发由
+    // global.slowmo_active 决定，其中已含「动效等级 >= 基础（ui_anim_on(1)）」这一条件。
     if (global.slowmo_active) {
         if (!variable_instance_exists(id, "__slow_base_ispeed")) {
             __slow_base_ispeed = image_speed;
