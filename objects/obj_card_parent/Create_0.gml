@@ -63,3 +63,6 @@ slowmo_anim_timer = true
 
 // 受伤 VM 挂载点用：记录上一帧血量，用于检测「本帧掉血」
 pre_hp=-1
+// ========= 是否有梯子 ========
+have_loder = false
+
