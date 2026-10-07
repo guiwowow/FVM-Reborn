@@ -67,6 +67,12 @@ if (os_type != os_windows) {
             }
         }
     }
+    // 屏幕左下加速按钮上方区域点击 = 选卡缓时开关（战斗专属，2026-10-07 恢复：此前被未声明的改动删掉）
+    if (mouse_check_button_pressed(mb_left)) {
+        if (mouse_x < 130 && mouse_y > room_height - 390 && mouse_y < room_height - 260) {
+            global.cardslow_enabled = !global.cardslow_enabled;
+        }
+    }
     // 屏幕左下 缓时按钮上方区域点击 = 调试：一键召唤本关 BOSS（仅 global.debug 模式 + 战斗内）
     if (global.debug && instance_exists(obj_battle) && mouse_check_button_pressed(mb_left)) {
         if (mouse_x < 130 && mouse_y > room_height - 520 && mouse_y < room_height - 390) {
@@ -127,8 +133,9 @@ if (instance_exists(obj_battle)) {
     with (obj_shovel_slot) {
         if (is_selected) _slow_selected = true;
     }
-    // 缓时特效并入动效等级（2026-10-07）：动效等级「关闭」时不触发缓时与其画面特效
-    global.slowmo_active = ui_anim_on(1) && global.cardslow_enabled && !global.is_paused && _slow_selected;
+    // 缓时是否触发：由战斗内左下「缓时:开/关」按钮（global.cardslow_enabled，config.ini 持久化）控制。
+    // 画面特效（冷色调+暗角）另由动效等级控制：动效等级 >= 基础才出 —— 见 obj_slowmo_overlay/Step_0.gml
+    global.slowmo_active = global.cardslow_enabled && !global.is_paused && _slow_selected;
 } else {
     global.slowmo_active = false;
 }

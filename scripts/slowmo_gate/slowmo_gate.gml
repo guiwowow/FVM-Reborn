@@ -46,7 +46,8 @@
 function slowmo_gate() {
     // 2026-10-07 恢复：2026-10-06 曾在此直接 `return false;` 把整个缓时模块下线
     // （战斗内「缓时:开/关」按钮同时被删）。现在闸口恢复原逻辑；缓时是否触发由
-    // global.slowmo_active 决定，其中已含「动效等级 >= 基础（ui_anim_on(1)）」这一条件。
+    // global.slowmo_active 决定（战斗内「缓时:开/关」按钮 / config.ini 的 settings/cardslow_enabled）；
+    // 画面特效另有「动效等级 >= 基础（ui_anim_on(1)）」条件，见 objects/obj_slowmo_overlay/Step_0.gml。
     if (global.slowmo_active) {
         if (!variable_instance_exists(id, "__slow_base_ispeed")) {
             __slow_base_ispeed = image_speed;

@@ -50,6 +50,23 @@ if (os_type != os_windows) {
 		draw_set_valign(fa_top);
 	}
 
+	// 安卓：绘制选卡缓时开关（加速按钮上方；战斗专属，点击开/关）
+	// 2026-10-07 恢复：此按钮此前被一次未声明的改动删掉（用户从未要求下掉缓时）
+	if (instance_exists(obj_battle)) {
+		draw_set_alpha(0.75);
+		draw_set_color(c_black);
+		draw_roundrect(-20, room_height - 390, 130, room_height - 260, false);
+		draw_set_alpha(1);
+		if (global.cardslow_enabled) draw_set_color(c_yellow); else draw_set_color(c_gray);
+		draw_roundrect(-12, room_height - 382, 122, room_height - 268, true);
+		draw_set_color(c_white);
+		draw_set_font(font_yuan);
+		draw_set_halign(fa_center);
+		draw_set_valign(fa_middle);
+		draw_text(55, room_height - 325, global.cardslow_enabled ? "缓时:开" : "缓时:关");
+		draw_set_halign(fa_left);
+		draw_set_valign(fa_top);
+	}
 	// 安卓：调试 BOSS 召唤按钮（缓时按钮上方；仅 global.debug 模式 + 战斗内，点击轮换召唤本关 BOSS）
 	if (global.debug && instance_exists(obj_battle)) {
 		draw_set_alpha(0.75);

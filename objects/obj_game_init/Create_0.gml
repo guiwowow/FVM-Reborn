@@ -157,6 +157,7 @@ if (!file_exists("config.ini")) {
 	ini_write_bool("settings", "borderless_window", true);
 	ini_write_real("settings", "save_slot", 0)
 	ini_write_bool("settings", "lose_focus_pause", true)
+	ini_write_bool("settings", "cardslow_enabled", true);
 	ini_open("config.ini");
     for (var i = 0; i < array_length(global.keybind_config); i++) {
         var kb = global.keybind_config[i];
@@ -218,12 +219,9 @@ global.difficulty = ini_read_real("settings", "difficulty", 1)
 global.borderless_window = ini_read_bool("settings", "borderless_window", true);
 global.save_slot = ini_read_real("settings", "save_slot", 0)
 global.lose_focus_pause = ini_read_bool("settings", "lose_focus_pause", true);
-// 2026-10-07：缓时开关已并入「动效等级」（动效等级「关闭」时不出缓时/特效），
-// 因此不再读 ini 的历史值（可能是下线期间写的 false）——引擎侧一律启用，
-// 实际是否触发由 global.slowmo_active（其中含 ui_anim_on(1)）决定。
-global.cardslow_enabled = true;
-  // 缓时特效已并入「动效等级」（2026-10-07）：不再读 slowmo_overlay 开关，
-  // 特效是否出现由 ui_anim_on(1)（动效等级 >= 基础）决定 —— 见 obj_slowmo_overlay/Step_0.gml
+// 战斗内左下「缓时:开/关」按钮控制缓时玩法是否触发，config.ini 持久化（默认开）。
+// 画面特效（冷色调+暗角）另由动效等级控制：动效等级 >= 基础时才出 —— 见 obj_slowmo_overlay/Step_0.gml
+global.cardslow_enabled = ini_read_bool("settings", "cardslow_enabled", true);
 global.ime_block = ini_read_bool("settings", "ime_block", true); // 输入法屏蔽开关（个别输入法环境异常时可关）
 // 兼容旧配置：键缺失时补写
 if (ini_read_string("settings", "ime_block", "") == "") {
