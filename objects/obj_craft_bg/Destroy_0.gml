@@ -5,3 +5,5 @@ obj_player_info_ui.menu_type = 0
 obj_world_map_button.world_map = 0
 if (surface_exists(card_surface))
     surface_free(card_surface)
+
+panel_anim_free(id)

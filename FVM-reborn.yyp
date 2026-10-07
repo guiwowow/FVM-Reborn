@@ -763,6 +763,7 @@
   "resources":[
     {"id":{"name":"ExitInfo","path":"extensions/ExitInfo/ExitInfo.yy",},},
     {"id":{"name":"TextureEncode","path":"extensions/TextureEncode/TextureEncode.yy",},},
+  "resources":[{"name":"spr_craft_bg_bar","path":"sprites/spr_craft_bg_bar/spr_craft_bg_bar.yy",},{"name":"spr_craft_bg_base","path":"sprites/spr_craft_bg_base/spr_craft_bg_base.yy",},{"name":"spr_craft_bg_left","path":"sprites/spr_craft_bg_left/spr_craft_bg_left.yy",},{"name":"spr_craft_bg_right","path":"sprites/spr_craft_bg_right/spr_craft_bg_right.yy",},{"name":"spr_option_anim_bar","path":"sprites/spr_option_anim_bar/spr_option_anim_bar.yy",},{"name":"spr_option_anim_label","path":"sprites/spr_option_anim_label/spr_option_anim_label.yy",},
     {"id":{"name":"font_hei","path":"fonts/font_hei/font_hei.yy",},},
     {"id":{"name":"font_number","path":"fonts/font_number/font_number.yy",},},
     {"id":{"name":"font_pixel","path":"fonts/font_pixel/font_pixel.yy",},},
