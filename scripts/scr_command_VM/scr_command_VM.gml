@@ -237,7 +237,8 @@ function VM_CreatePlatform(col_addr, row_addr, width_addr, length_addr, axis_add
     var distance = vm_read_mem(global.__vm, distance_addr);
     var idle = vm_read_mem(global.__vm, idle_addr);
     var spr = vm_read_mem(global.__vm, spr_addr);
-    var _VM_id = ++global._VM_create_counter;
+    global._VM_create_counter += 1;   // YYC 兼容：前缀 ++ 作为值会生成 ++(x).asReal() ⇒ C++ expression is not assignable
+var _VM_id = global._VM_create_counter;
     if (global.network.mode == "client") return -_VM_id;
     vm_trace("    [plat] col=" + string(col) + " row=" + string(row) + " w=" + string(width) + " len=" + string(length))
     var _pos = get_world_position_from_grid(col, row);
@@ -1777,7 +1778,8 @@ function VM_SpawnPlantsRandom(x_addr, y_addr, w_addr, h_addr,
 				global._mod_pending_card_id = "";
 			if (_plant >= 0) {
 				network_apply_plant_level(_plant);
-				var _VM_id = ++global._VM_create_counter;
+				global._VM_create_counter += 1;   // YYC 兼容：前缀 ++ 作为值会生成 ++(x).asReal() ⇒ C++ expression is not assignable
+var _VM_id = global._VM_create_counter;
 				_plant._VM_id = _VM_id;
 				if (global.network.mode == "server") {
 					ds_map_add(global._VM_id_to_real, _VM_id, _plant);
@@ -1990,7 +1992,8 @@ function VM_Ceil(value_addr) {
 function VM_SpawnBatMouse(col_addr, row_addr) {
 	var b_col = vm_read_mem(global.__vm, col_addr);
 	var b_row = vm_read_mem(global.__vm, row_addr);
-	var _VM_id = ++global._VM_create_counter;
+	global._VM_create_counter += 1;   // YYC 兼容：前缀 ++ 作为值会生成 ++(x).asReal() ⇒ C++ expression is not assignable
+var _VM_id = global._VM_create_counter;
 	if (global.network.mode == "client") return -_VM_id;
 	var target_pos = get_world_position_from_grid(b_col, b_row);
 	var inst = instance_create_depth(target_pos.x + 10, target_pos.y - room_height, -500, obj_bat_mouse_target);
@@ -2370,7 +2373,8 @@ function VM_SpawnObject(obj_name_addr, col_addr, row_addr) {
     var obj_name = vm_read_mem(global.__vm, obj_name_addr);
     var col = vm_read_mem(global.__vm, col_addr);
     var row = vm_read_mem(global.__vm, row_addr);
-    var _VM_id = ++global._VM_create_counter;
+    global._VM_create_counter += 1;   // YYC 兼容：前缀 ++ 作为值会生成 ++(x).asReal() ⇒ C++ expression is not assignable
+var _VM_id = global._VM_create_counter;
     if (global.network.mode == "client") return -_VM_id;
     if (!string_starts_with(obj_name, "obj_"))
         obj_name = "obj_" + obj_name;
@@ -2451,7 +2455,8 @@ function VM_SpawnPlant(card_id_addr, col_addr, row_addr, shape_addr, level_addr,
     global._evt_log_enabled = false;          // 创建不进帧尾日志（spawn_plant/card_created 手动广播）
     for (var _r = _row_start; _r <= _row_end; _r++) {
         for (var _c = _col_start; _c <= _col_end; _c++) {
-            var _VM_id = ++global._VM_create_counter;
+            global._VM_create_counter += 1;   // YYC 兼容：前缀 ++ 作为值会生成 ++(x).asReal() ⇒ C++ expression is not assignable
+var _VM_id = global._VM_create_counter;
             if (global.network.mode == "client") {
                 if (!_batch) return -_VM_id;
                 continue;
@@ -2491,7 +2496,8 @@ function VM_SpawnEnemy(type_addr, row_addr, hp_override_addr) {
     var type = vm_read_mem(global.__vm, type_addr);
     var row = vm_read_mem(global.__vm, row_addr);
     var hp_override = vm_read_mem(global.__vm, hp_override_addr);
-    var _VM_id = ++global._VM_create_counter;
+    global._VM_create_counter += 1;   // YYC 兼容：前缀 ++ 作为值会生成 ++(x).asReal() ⇒ C++ expression is not assignable
+var _VM_id = global._VM_create_counter;
     if (global.network.mode == "client") return -_VM_id;
     var _info = global.enemy_map[? type];
     if (is_undefined(_info)) return -1;
@@ -2529,7 +2535,8 @@ function VM_SpawnBoss(type_addr, row_addr, hp_override_addr) {
     var type = vm_read_mem(global.__vm, type_addr);
     var row = vm_read_mem(global.__vm, row_addr);
     var hp_override = vm_read_mem(global.__vm, hp_override_addr);
-    var _VM_id = ++global._VM_create_counter;
+    global._VM_create_counter += 1;   // YYC 兼容：前缀 ++ 作为值会生成 ++(x).asReal() ⇒ C++ expression is not assignable
+var _VM_id = global._VM_create_counter;
     if (global.network.mode == "client") return -_VM_id;
     var _info = global.enemy_map[? type];
     if (is_undefined(_info)) return -1;
