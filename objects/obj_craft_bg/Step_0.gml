@@ -1,8 +1,10 @@
 if close_timer > 0{
-	close_timer --
+        close_timer --
 }
 if close_timer == 0{
-	instance_destroy()
+        // 反向滑出 + 淡出；播完由 panel_anim_step 销毁（close_timer 归位，别每帧重复触发）
+        panel_anim_close(id)
+        close_timer = -1
 }
 
 // 安卓：双指滑动替代滚轮（合成屋卡片列表，与选卡界面一致）
@@ -18,6 +20,3 @@ if (os_type != os_windows) {
         }
     });
 }
-	// 反向滑出 + 淡出；播完由 panel_anim_step 销毁（close_timer 归位，别每帧重复触发）
-	panel_anim_close(id)
-	close_timer = -1

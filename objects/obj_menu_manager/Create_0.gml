@@ -87,6 +87,9 @@ function after_texture_load() {
     prewarm_idx = 0
     prewarm_active = true
     // 安卓/移动端跳过 scribble 中文字体烘焙（CPU 极重且可能触发阻塞弹窗），文字回退用普通字体渲染
+    // 收尾动效（黑滤镜淡出 + LOGO 下移 50px 淡出）必须在下面的安卓分支 return 之前触发，
+    // 否则安卓永远走不到这一行 —— 加载界面/LOGO 会硬切消失（2026-10-09 用户报「开屏 logo 消失时没有动效」）。
+    if (ui_anim_on(1)) self.outro_t = 0   // 等级 1/2 才开始收尾；等级 0 加载界面直接消失
     if (os_type == os_android) {
         // 只注册默认字体（轻量，不烘焙）：保证安卓上所有不带 starting_format 的 Scribble 文本回退到 font_hei
         scribble_font_set_default("font_hei")
@@ -101,7 +104,6 @@ function after_texture_load() {
         obj_world_map_button.world_map = 0
         return;
     }
-	if (ui_anim_on(1)) self.outro_t = 0   // 等级 1/2 才开始收尾（黑滤镜淡出 + LOGO 下移 50px 淡出）；等级 0 加载界面直接消失
     scribble_font_set_default("font_hei")
     scribble_font_bake_outline_4dir("font_hei", "font_hei_outline_4dir_black", c_dkgray, false)
 	if !global.preloaded{
