@@ -148,6 +148,8 @@ function show_notice(notice_text, life) {
 function update_notices() {
     if (!variable_global_exists("notice_list")) return;
     var _span = NOTICE_SLIDE_IN + NOTICE_SLIDE_OUT;
+    // 动效等级（并入上游 PR#93 的语义）：等级 <2 = toast 不做滑入/滑出，到点直接消失。
+    var _anim_span = ui_anim_on(2) ? _span : 0;
     // 屏幕有输入 ⇒ 这条通知 1 秒后收起；关卡内**不受输入影响**（固定 2.5s）。
     // 只在滑入完成后判定：弹出这条通知的那一下点击本身也是"输入"，
     // 不排除的话它刚出现就被判成"有输入"，2s 常驻等于没有。
@@ -158,7 +160,7 @@ function update_notices() {
         if (_input && notice.frames > NOTICE_SLIDE_IN) {
             notice.life = min(notice.life, notice.frames + NOTICE_INPUT_GRACE);
         }
-        if (notice.frames > notice.life + _span) {
+        if (notice.frames > notice.life + _anim_span) {
             array_delete(global.notice_list, i, 1);
             continue;
         }
@@ -211,7 +213,9 @@ function draw_notices() {
         // 用乘法展开而不是 power()，少一次函数调用（toast 每帧都在算）。
         var _t;
         var _p;
-        if (notice.frames <= NOTICE_SLIDE_IN) {
+        if (!ui_anim_on(2)) {
+            _t = 1;                                        // 动效等级 <2：不做滑入/滑出，直接落位
+        } else if (notice.frames <= NOTICE_SLIDE_IN) {
             _p = notice.frames / NOTICE_SLIDE_IN;
             var _q = 1 - _p;
             _t = 1 - _q * _q * _q;                          // ease-out cubic
