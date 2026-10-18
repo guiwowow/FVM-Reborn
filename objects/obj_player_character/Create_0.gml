@@ -41,3 +41,5 @@ slowmo_anim_timer = true
 
 // 受伤 VM 挂载点：记录上一帧血量
 pre_hp = -1
+// ========= 是否有梯子 ========
+have_loder = false
