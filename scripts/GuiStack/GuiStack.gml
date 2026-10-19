@@ -139,10 +139,8 @@ function room_transition_start(_room){
     if (!room_exists(_room)) {
         return
     }
-    if (!ui_anim_on(1)) {                 // 关闭动效：直接换房，不遮黑
-        if (_room != room) { room_goto(_room) }
-        return
-    }
+    // 场景过渡是功能性的（换房/换地图时不露底、不闪帧），不再受「界面动效」档位门控：
+    // 档位 0 曾把整段淡出淡入跳过，表现为地图直接瞬切、黑屏转场消失（2026-10-20 修）。
     // 不丢请求：正在淡出就只改目标；正在淡入就从当前黑度接着压黑
     if (_tr.mode != 1) {
         var _a = room_transition_alpha()
@@ -163,11 +161,9 @@ function room_transition_start(_room){
 /// @param {Any} _action_arg 传给它的参数
 function room_transition_in_place(_action_fn, _action_arg = undefined){
     var _tr = room_transition_state()
-    if (!ui_anim_on(1)) {                 // 关闭动效：立刻执行动作，不做淡出淡入
-        if (_action_fn != undefined) { _action_fn(_action_arg) }
-        return
-    }
+    // 同上：同房间换地图的淡出淡入是功能性过渡，不受动效档位门控
     _tr.in_place = true
+    vm_trace("[TRANS] in_place 请求 map=" + string(global.map_id) + " ui_anim=" + string(ui_anim_level()))
     _tr.action_fn = _action_fn
     _tr.action_arg = _action_arg
     if (_tr.mode != 1) {

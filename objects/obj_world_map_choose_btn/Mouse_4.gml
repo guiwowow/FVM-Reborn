@@ -16,7 +16,10 @@ if unlocked{
 			}
 			global.gui_stack.to(room_target)
 		}
-		else if _known && global.map_id != map_id{
+		else if global.map_id != map_id{
+// 注意：这里不再要求 _known（曾因 maps_map 键名不一致导致点了毫无反应、
+// 也没有黑屏转场）。map_switch_apply 内部直接写 global.map_id/name，
+// obj_map_manager 自己有 ds_map_exists 保护。
 			// 同一个房间里换地图（美味岛 → 火山岛 / 浮空岛…）：也淡出淡入，全黑那一刻才换
 			room_transition_in_place(map_switch_apply, { id: map_id, name: map_name })
 		}
