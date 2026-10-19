@@ -11,6 +11,7 @@ persistent = true
 depth = 1000000
 
 prev_touch_count = 0
+prev_paused = false   // 回前台首帧检测用（后台期间抬指事件会丢）
 
 // 取消按钮（GUI 坐标系，游戏内 1920x1080 空间，右上角）
 cancel_btn = { x: 1800, y: 20, w: 90, h: 90 }

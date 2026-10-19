@@ -125,6 +125,7 @@ function room_transition_state(){
             action_arg: undefined,
             out_time: 0.22,
             in_time: 0.30,
+            frames: 0,        // 本次过渡已经过的帧数：掉帧时用它保底最少可见帧
             color: c_black
         }
     }
@@ -146,6 +147,7 @@ function room_transition_start(_room){
     if (_tr.mode != 1) {
         var _a = room_transition_alpha()
         _tr.mode = 1
+        _tr.frames = 0
         _tr.t = sqrt(clamp(_a, 0, 1)) * _tr.out_time
         show_debug_message("[TRANS] start " + room_get_name(_room) + " （from " + room_get_name(room) + "）")
     }
@@ -199,10 +201,12 @@ function room_transition_step(){
     }
     _tr.frame = current_time
     _tr.t += min(delta_time / 1000000, 0.05)   // 单帧最多推进 50ms：换房那一帧会掉帧
+    _tr.frames += 1                            // 帧数保底：加载卡顿时 t 会被一帧吃掉半程
     if (_tr.mode == 1) {
-        if (_tr.t >= _tr.out_time) {
+        if (_tr.t >= _tr.out_time && _tr.frames >= 6) {
             _tr.mode = 2
             _tr.t = 0
+            _tr.frames = 0
             if (_tr.in_place) {
                 _tr.in_place = false
                 var _fn  = _tr.action_fn
@@ -226,9 +230,10 @@ function room_transition_step(){
             }
         }
     }
-    else if (_tr.t >= _tr.in_time) {
+    else if (_tr.t >= _tr.in_time && _tr.frames >= 8) {
         _tr.mode = 0
         _tr.t = 0
+        _tr.frames = 0
     }
 }
 

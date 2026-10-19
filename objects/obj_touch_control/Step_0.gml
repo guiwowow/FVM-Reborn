@@ -26,6 +26,24 @@ if (os_type != os_windows) {
 // room_transition_step 内部有 `if (_tr.frame == current_time) return` 同帧守卫，重复调用无害。
 room_transition_step();
 
+// ── 回前台首帧输入复位（2026-10-20）────────────────────────────────────
+// 现象：切到桌面再回到游戏，前几秒点哪都没反应，之后自己恢复。
+// 原因：进后台时若手指正按着，抬起事件发生在后台，引擎收不到 ⇒ 鼠标左键状态卡在
+//       "按下未抬起"。回前台后所有 mouse_check_button_pressed() 都不再触发（引擎认为
+//       一直是按着的），必须等玩家再点一次产生"抬起→按下"才会恢复。
+// 处置：检测 os_is_paused() 由真变假，清掉陈旧输入 + 重置触摸手势状态与锁帧基准。
+if (os_is_paused()) {
+    prev_paused = true;
+} else if (prev_paused) {
+    prev_paused = false;
+    io_clear();                       // 清引擎侧鼠标/键盘按键状态
+    vm_trace("[touch] RESUME_INPUT_RESET 回前台输入复位")
+    global.touch_press_frames = 0;
+    global.touch_dragged     = false;
+    global.touch_item_drag   = false;
+    _last_frame_time         = current_time;   // 后台期间的时间差不要算进锁帧
+}
+
 // 2 倍速支持性实测：推进探测窗口（必须在压帧之后，fps 才反映真实节拍）
 // 见 scripts/speed_up_control/speed_up_control.gml 的 speed_up_probe_tick()
 speed_up_probe_tick();
