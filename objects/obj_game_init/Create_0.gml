@@ -46,7 +46,7 @@ global.mod_enabled = directory_exists("mod/cards/") or directory_exists(working_
 global._mod_pending_card_id = ""
 global._VM_cur_card = noone
 global.laboretory_room = false
-global.game_version = "3.0.0.1"
+global.game_version = "3.0.0"
 
 // 崩溃面包屑检查：上次运行若崩在半路（没写 OK end），这里把追踪内容弹出来。
 // 放在启动早期即可 —— 弹窗由 room_init 里的 obj_notice_controller 在 Draw 时渲染。
