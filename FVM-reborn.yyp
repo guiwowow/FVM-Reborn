@@ -3468,7 +3468,53 @@
   ],
   "templateType":"game",
   "TextureGroups":[
-    {"$GMTextureGroup":"","%Name":"Default","autocrop":true,"border":2,"compressFormat":"bz2","customOptions":"","directory":"","groupParent":null,"isScaled":true,"loadType":"default","mipsToGenerate":0,"name":"Default","resourceType":"GMTextureGroup","resourceVersion":"2.0","targets":-1,},
+    {"$GMTextureGroup":"","%Name":"Default","autocrop":true,"border":2,"compressFormat":"custom","ConfigValues":{
+        "ASTC":{
+          "compressFormat":"custom",
+          "customOptions":"ASTC 6x6 -medium",
+          "groupParent":"null",
+          "loadType":"default",
+        },
+        "BZ2QOI":{
+          "compressFormat":"bz2",
+          "groupParent":"null",
+          "loadType":"default",
+        },
+        "PNG":{
+          "compressFormat":"png",
+          "groupParent":"null",
+          "loadType":"default",
+        },
+        "QOI":{
+          "compressFormat":"qoi",
+          "groupParent":"null",
+          "loadType":"default",
+        },
+        "BC3":{
+          "compressFormat":"custom",
+          "customOptions":"BCN -3 -u0",
+          "groupParent":"null",
+          "loadType":"default",
+        },
+        "BC7":{
+          "compressFormat":"custom",
+          "customOptions":"BCN -u2",
+          "groupParent":"null",
+          "loadType":"default",
+        },
+        "GNF_BC3":{
+          "compressFormat":"custom",
+          "customOptions":"GNF -f Bc3Unorm -b 0.5",
+          "groupParent":"null",
+          "loadType":"default",
+        },
+        "GNF_BC7":{
+          "compressFormat":"custom",
+          "customOptions":"GNF -f Bc7Unorm -b 0.5",
+          "groupParent":"null",
+          "loadType":"default",
+        },
+      },"customOptions":"ASTC 6x6 -medium","directory":"","groupParent":null,"isScaled":true,"loadType":"default","mipsToGenerate":0,"name":"Default","resourceType":"GMTextureGroup","resourceVersion":"2.0","targets":-1,},
     {"$GMTextureGroup":"","%Name":"enemy_delicious","autocrop":true,"border":2,"compressFormat":"custom","ConfigValues":{
         "ASTC":{
           "compressFormat":"custom",
@@ -3657,7 +3703,53 @@
           "loadType":"default",
         },
       },"customOptions":"ASTC 6x6 -medium","directory":"","groupParent":null,"isScaled":true,"loadType":"default","mipsToGenerate":0,"name":"effects","resourceType":"GMTextureGroup","resourceVersion":"2.0","targets":-1,},
-    {"$GMTextureGroup":"","%Name":"UI","autocrop":true,"border":8,"compressFormat":"bz2","customOptions":"","directory":"","groupParent":null,"isScaled":true,"loadType":"default","mipsToGenerate":0,"name":"UI","resourceType":"GMTextureGroup","resourceVersion":"2.0","targets":-1,},
+    {"$GMTextureGroup":"","%Name":"UI","autocrop":true,"border":8,"compressFormat":"custom","ConfigValues":{
+        "ASTC":{
+          "compressFormat":"custom",
+          "customOptions":"ASTC 6x6 -medium",
+          "groupParent":"null",
+          "loadType":"default",
+        },
+        "BZ2QOI":{
+          "compressFormat":"bz2",
+          "groupParent":"null",
+          "loadType":"default",
+        },
+        "PNG":{
+          "compressFormat":"png",
+          "groupParent":"null",
+          "loadType":"default",
+        },
+        "QOI":{
+          "compressFormat":"qoi",
+          "groupParent":"null",
+          "loadType":"default",
+        },
+        "BC3":{
+          "compressFormat":"custom",
+          "customOptions":"BCN -3 -u0",
+          "groupParent":"null",
+          "loadType":"default",
+        },
+        "BC7":{
+          "compressFormat":"custom",
+          "customOptions":"BCN -u2",
+          "groupParent":"null",
+          "loadType":"default",
+        },
+        "GNF_BC3":{
+          "compressFormat":"custom",
+          "customOptions":"GNF -f Bc3Unorm -b 0.5",
+          "groupParent":"null",
+          "loadType":"default",
+        },
+        "GNF_BC7":{
+          "compressFormat":"custom",
+          "customOptions":"GNF -f Bc7Unorm -b 0.5",
+          "groupParent":"null",
+          "loadType":"default",
+        },
+      },"customOptions":"ASTC 6x6 -medium","directory":"","groupParent":null,"isScaled":true,"loadType":"default","mipsToGenerate":0,"name":"UI","resourceType":"GMTextureGroup","resourceVersion":"2.0","targets":-1,},
     {"$GMTextureGroup":"","%Name":"player","autocrop":true,"border":2,"compressFormat":"custom","ConfigValues":{
         "ASTC":{
           "compressFormat":"custom",
