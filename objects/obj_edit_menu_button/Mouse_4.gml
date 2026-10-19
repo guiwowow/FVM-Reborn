@@ -30,12 +30,13 @@ else if btn_type == "export_save_backup" {
 			var _d = date_current_datetime();
 			var _stamp = string(date_get_year(_d)) + string(date_get_month(_d)) + string(date_get_day(_d)) + "_" + string(date_get_hour(_d)) + string(date_get_minute(_d)) + string(date_get_second(_d));
 			file_copy(_save_path, "backups/save" + string(global.save_slot) + "_" + _stamp + ".json");
+			file_copy(_save_path, "backups/import_latest.json");   // 固定名副本：剪贴板不可用时导入兜底用
 			// FVM: 写分享请求（Java 桥读取后生成含内容的 txt 到下载目录并拉起系统分享面板，
 			// 绕开微信/QQ 文本框字符数限制；剪贴板内容保持不变作为兜底）
 			var _sf = file_text_open_write("share_request.txt");
 			file_text_write_string(_sf, json_stringify(global.save_data));
 			file_text_close(_sf);
-			show_message_async("存档已复制到剪贴板，正在拉起系统分享…（txt 文件同时生成在下载目录）")
+			show_notice("存档已复制到剪贴板，已备份到 backups/", 150)
 		}
 	}
 }
@@ -44,6 +45,14 @@ else if btn_type == "import_save_backup" {
 	{
 		// 安卓：导入 = 读取剪贴板存档内容（先复制存档文本再导入）
 		var _txt = clipboard_get_text();
+		if (_txt == "" && file_exists("backups/import_latest.json")) {
+			var _rf = file_text_open_read("backups/import_latest.json");
+			if (_rf >= 0) {
+				_txt = "";
+				while (!file_text_eof(_rf)) { _txt += file_text_read_string(_rf) + "\n"; }
+				file_text_close(_rf);
+			}
+		}
 		if (_txt == "") {
 			show_notice("剪贴板为空，请先复制要导入的存档内容", 150)
 		} else {
