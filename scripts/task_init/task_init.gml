@@ -2070,11 +2070,6 @@ function task_init(){
 						"card_skill_limit":8,
 						"require":1,
 					},
-					{
-						"type":"slot_limit",
-						"desc":"不得携带超过12张卡片",
-						"require":12,
-					},
 				],
 				"rewards":[
 					{

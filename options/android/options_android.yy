@@ -3,10 +3,10 @@
   "%Name":"Android",
   "ConfigValues":{
     "ASTC":{
-      "option_android_version":"3.0.0",
+      "option_android_version":"3.0.1",
     },
     "BC7":{
-      "option_android_version":"3.0.0",
+      "option_android_version":"3.0.1",
     },
   },
   "name":"Android",
@@ -87,7 +87,7 @@
   "option_android_tv_isgame":true,
   "option_android_tv_supports_leanback":true,
   "option_android_use_facebook":false,
-  "option_android_version":"3.0.0",
+  "option_android_version":"3.0.1",
   "resourceType":"GMAndroidOptions",
   "resourceVersion":"2.0",
 }
