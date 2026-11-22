@@ -1,5 +1,8 @@
 //step事件
-if global.is_paused{
+// 暂停时仍然允许拿起/放置卡片（空格暂停），只有下面两种情况才完全停手：
+//   ① ESC 菜单打开（global.show_menu）——鼠标要留给菜单按钮
+//   ② 关卡已结束（global.game_over）——结算界面不该再操作卡槽
+if (global.is_paused && (global.show_menu || global.game_over)){
 	exit
 }
 
@@ -27,11 +30,10 @@ if global.debug{
 	cooldown_timer = cooldown
 }
 if cooldown_timer < cooldown{
-	// 选卡缓时：冷却也 12 倍慢（与战斗节奏一致）
-	if (!(global.slowmo_active && global.game_frame != 0)) {
+	// 选卡缓时：冷却也 12 倍慢；暂停时不推进倒计时
+	if (!global.is_paused && !(global.slowmo_active && global.game_frame != 0)) {
 		cooldown_timer ++
 	}
-
 
     // 冷却中状态
     is_ready = false;
@@ -117,7 +119,7 @@ if (is_ready && _touch_pick && !two_finger_gesture_active()) {
 
 var slot_key = global.keybind_map[? "卡槽" + string(slot_index)];
 
-if keyboard_check_pressed(slot_key) && is_ready{
+if !global.console_open && keyboard_check_pressed(slot_key) && is_ready{
         // 选中当前卡槽
 		if !is_selected{
 			select_slot()
@@ -186,6 +188,7 @@ if (is_selected) {
     // PC 右键分支已按 mobile-only 移除）
     if (keyboard_check_pressed(vk_escape)) {
         if (global.debug) { show_debug_message("卡槽取消: 右键/ESC"); }
+        // 右键取消选择
         is_selected = false;
         if (selected_preview != noone && instance_exists(selected_preview)) {
             instance_destroy(selected_preview);

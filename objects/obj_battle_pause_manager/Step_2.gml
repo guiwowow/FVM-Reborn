@@ -11,7 +11,7 @@ if (os_type != os_windows) {
     }
 }
 // 上游 PR#71：PC 结算界面左键 = 继续（安卓走下面 os_type 分支的点击判定）
-var _space = keyboard_check_pressed(vk_space) || (mouse_check_button_pressed(mb_left) && global.game_over);
+var _space = !global.console_open && (keyboard_check_pressed(vk_space) || (mouse_check_button_pressed(mb_left) && global.game_over));
 if (os_type != os_windows && (global.is_paused || global.game_over || obj_battle.battle_time == 1)) {
     if (mouse_check_button_pressed(mb_left)) _space = true;
 }
@@ -128,7 +128,7 @@ if (_space) {
     //}
 }
 
-if (keyboard_check_pressed(vk_escape)) {
+if (!global.console_open && keyboard_check_pressed(vk_escape)) {
     if (!global.is_paused) {
         // ESC暂停：暂停并显示菜单
         global.is_paused = true;
@@ -149,7 +149,7 @@ if (keyboard_check_pressed(vk_escape)) {
     }
 }
 
-if (keyboard_check_pressed(ord("R"))) {
+if (!global.console_open && keyboard_check_pressed(ord("R"))) {
 	if global.game_over{
 		if obj_game_over.sprite_index == spr_lose{
 			room_transition_start(room)   // 重开本局也走淡出淡入

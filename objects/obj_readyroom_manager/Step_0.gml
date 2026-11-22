@@ -6,8 +6,7 @@
         global.audio.play(readyroom_music, 0, 0);
     }
 // 安卓适配：不加右键返回（安卓双击会被引擎合成为 mb_right，选卡界面双击查看卡片会误退）；返回键映射 vk_escape
-if keyboard_check_pressed(vk_escape){
-	if instance_exists(obj_quit_confirm){
+if keyboard_check_pressed(vk_escape){	if instance_exists(obj_quit_confirm){
 		instance_destroy(obj_quit_confirm)
 	}
 	else{
@@ -51,7 +50,7 @@ if (hover_card_index != -1 && !is_submenu_open && !instance_exists(obj_package_b
 	for (var _k = 1; _k <= deck_slot_max(); _k++) {
 		var _hot_key = global.keybind_map[? "卡槽" + string(_k)]
 		if (_hot_key == undefined) continue
-		if (!keyboard_check_pressed(_hot_key)) continue
+		if (global.console_open || !keyboard_check_pressed(_hot_key)) continue
 
 		var _hot_slot = _k - 1
 		var _hot_page = (_hot_slot >= 11) ? 10 : 0

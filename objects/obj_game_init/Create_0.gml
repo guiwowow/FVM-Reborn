@@ -45,8 +45,10 @@ install_bundled_mods()
 global.mod_enabled = directory_exists("mod/cards/") or directory_exists(working_directory + "mod/cards/")
 global._mod_pending_card_id = ""
 global._VM_cur_card = noone
+global.console_enabled = false
+global.console_open = false
 global.laboretory_room = false
-global.game_version = "3.0.1"
+global.game_version = "3.1.0"
 
 // 崩溃面包屑检查：上次运行若崩在半路（没写 OK end），这里把追踪内容弹出来。
 // 放在启动早期即可 —— 弹窗由 room_init 里的 obj_notice_controller 在 Draw 时渲染。
@@ -80,9 +82,16 @@ try { exception_unhandled_handler(fvm_exception_report); } catch (_e0) {}
 // 随包内置的实验室关卡（datafiles/bundled_stages/ → 沙盒 laboratory/）
 // 在线下载暂时拿不到这些图时，用它验证地图脚本 VM 与 mod 插件。
 // 只拷沙盒里还没有的，不覆盖玩家自己下载/改过的同名文件。
-install_bundled_stages()
-global.tower_level_click = false
+install_bundled_stages()global.tower_level_click = false
 global.tower_cake_page = 1
+// 关卡文件哈希校验开关（见 scripts/level_integrity）：
+//   正式版 = true，读取关卡时会拿内存中的内容与 scripts/level_hashes 的离线哈希比对，
+//            不一致就退回地图并提示「关卡文件读取失败」。
+//   测试版 = false，改关卡 JSON 时不必每次重跑 tools/gen_level_hashes.py。
+global.level_hash_verify = true
+// 本次运行中「存档写入校验失败」的累计次数：第 3 次弹窗时无论点确定还是取消都退出游戏
+global.save_fail_count = 0
+
 Music_Init()
 
 global.laboratory_manager = new LaboratoryManager()
@@ -137,7 +146,9 @@ global.keybind_config = [
     {"name": "卡槽18", "default1": ord("S"), "tooltip": ""},
 	{"name": "卡槽19", "default1": ord("D"), "tooltip": ""},
     {"name": "卡槽20", "default1": ord("F"), "tooltip": ""},
-    {"name": "卡槽21", "default1": ord("G"), "tooltip": ""}
+    {"name": "卡槽21", "default1": ord("G"), "tooltip": ""},
+	// 控制台：OEM 键 ~（GMS 里对应 VK_OEM_3 = 192）
+    {"name": "控制台", "default1": 192, "tooltip": ""}
 ];
 //window_set_caption("FVM:Reborn")
 // 初始化全局设置（如果不存在配置文件）
@@ -159,6 +170,7 @@ if (!file_exists("config.ini")) {
 	ini_write_bool("settings", "lose_focus_pause", true)
 	ini_write_bool("settings", "cardslow_enabled", true);
 	ini_write_real("settings", "ui_anim", 1)
+	ini_write_bool("settings", "pause_filter", false)
 	ini_open("config.ini");
     for (var i = 0; i < array_length(global.keybind_config); i++) {
         var kb = global.keybind_config[i];
@@ -224,7 +236,14 @@ global.lose_focus_pause = ini_read_bool("settings", "lose_focus_pause", true);
 // 画面特效（冷色调+暗角）另由动效等级控制：动效等级 >= 基础时才出 —— 见 obj_slowmo_overlay/Step_0.gml
 global.cardslow_enabled = ini_read_bool("settings", "cardslow_enabled", true);
 global.ime_block = ini_read_bool("settings", "ime_block", true); // 输入法屏蔽开关（个别输入法环境异常时可关）
-global.ui_anim = clamp(ini_read_real("settings", "ui_anim", 1), 0, 2); // 界面动效分级：0=关闭 1=基础 2=完全（设置界面「画面设置」页的滑块改它）
+global.ui_anim = clamp(ini_read_real("settings", "ui_anim", 1), 0, 2); // 界面动效分级：0=关闭 1=基础 2=完全（设置界面「画面设置」页的滑块改它）// 暂停滤镜：[settings] pause_filter
+//   false（默认）= 原来的行为：空格暂停时叠一层黑色半透明遮罩
+//   true          = 开启该选项后，暂停页不再绘制黑色半透明遮罩（暂停时能直接看清战场）
+global.pause_filter = ini_read_bool("settings", "pause_filter", false);
+// 兼容旧配置：键缺失时补写，玩家可手改 %LOCALAPPDATA%\FVM_Reborn\config.ini
+if (ini_read_string("settings", "pause_filter", "") == "") {
+    ini_write_bool("settings", "pause_filter", false);
+}
 // 兼容旧配置：键缺失时补写，玩家可手改 %LOCALAPPDATA%\FVM_Reborn\config.ini 关闭
 if (ini_read_string("settings", "ime_block", "") == "") {
     ini_write_bool("settings", "ime_block", true);
@@ -233,6 +252,18 @@ for (var i = 0; i < array_length(global.keybind_config); i++) {
 	    var kb = global.keybind_config[i];
 	    var key_val = ini_read_real("keybinds", kb.name, kb.default1);
 	    global.keybind_map[? kb.name] = key_val;
+	    // 兼容旧配置：后加的键位（如「控制台」）在旧 config.ini 里没有这一行，补写一条默认值
+	    if (ini_read_string("keybinds", kb.name, "") == "") {
+	        ini_write_real("keybinds", kb.name, kb.default1);
+	    }
+}
+
+// 控制台开关：config.ini → [settings] console_enabled
+//   true（默认）= 可用；false = 完全禁用（~ 键不响应，指令也不执行）
+// 旧配置补写，玩家可手改 %LOCALAPPDATA%\FVM_Reborn\config.ini
+global.console_enabled = ini_read_bool("settings", "console_enabled", false);
+if (ini_read_string("settings", "console_enabled", "") == "") {
+    ini_write_bool("settings", "console_enabled", false);
 }
 
 
